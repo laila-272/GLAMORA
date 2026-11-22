@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { Search, User, ShoppingBag, Menu, X, ChevronDown } from "lucide-react";
 import Logo from "../assets/logo.png";
 
@@ -7,17 +8,14 @@ const announcements = [
   { text: "Easy 14-day returns", align: "text-center" },
   { text: "Cash on delivery available", align: "text-right" },
   { text: "Cash on delivery available", align: "text-right" },
-  // { text: "Cash on delivery available", align: "text-right" },
-  // { text: "Cash on delivery available", align: "text-right" },
 ];
 
 const links = [
   { label: "Shop all", href: "#shop-all" },
-
   { label: "Women", href: "#women", mega: true },
   { label: "Men", href: "#men" },
   { label: "Unisex", href: "#kids" },
-  { label: "Brands", href: "#kids" },
+  { label: "Brands", to: "/brands" },
   { label: "Our story", href: "#story" },
   { label: "Contact", href: "#contact" },
 ];
@@ -59,6 +57,9 @@ const megaColumns = [
 const iconButton = "p-1.5 text-ink hover:text-terracotta";
 const linkBase =
   "font-inter text-[14px] lg:text-[15px] text-[#625E57] transition-colors duration-200 hover:text-black";
+const linkActive =
+  "font-inter text-[14px] lg:text-[15px] font-semibold text-[#f4256b]";
+
 function MegaMenu({ id }) {
   return (
     <div
@@ -98,6 +99,7 @@ function MegaMenu({ id }) {
 function MobileMenu({ id, onClose }) {
   const [womenOpen, setWomenOpen] = useState(false);
   const womenId = useId();
+  const { pathname } = useLocation();
 
   return (
     <nav
@@ -150,6 +152,18 @@ function MobileMenu({ id, onClose }) {
                   </div>
                 )}
               </>
+            ) : l.to ? (
+              <Link
+                to={l.to}
+                onClick={onClose}
+                className={`block py-3.5 ${
+                  pathname.startsWith(l.to)
+                    ? "font-semibold text-[#f4256b]"
+                    : ""
+                }`}
+              >
+                {l.label}
+              </Link>
             ) : (
               <a href={l.href} onClick={onClose} className="block py-3.5">
                 {l.label}
@@ -169,6 +183,7 @@ export default function Navbar() {
   const rootRef = useRef(null);
   const megaId = useId();
   const mobileId = useId();
+  const { pathname } = useLocation();
 
   const closeAll = useCallback(() => {
     setMega({ open: false, pinned: false });
@@ -190,6 +205,11 @@ export default function Navbar() {
     };
   }, [closeAll]);
 
+  // Close menus whenever the route changes.
+  useEffect(() => {
+    closeAll();
+  }, [pathname, closeAll]);
+
   const hoverOpen = () =>
     setMega((m) => (m.open ? m : { open: true, pinned: false }));
   const hoverClose = () =>
@@ -204,7 +224,6 @@ export default function Navbar() {
   return (
     <header ref={rootRef} id="top" className="sticky top-0 z-50">
       {/* Announcement bar */}
-
       <div className="overflow-hidden bg-[#1D1D1B] text-white">
         <div className="announcement-track flex h-8 w-max items-center">
           {[0, 1].map((group) => (
@@ -265,6 +284,15 @@ export default function Navbar() {
                         >
                           {l.label}
                         </button>
+                      ) : l.to ? (
+                        <Link
+                          to={l.to}
+                          className={`${
+                            pathname.startsWith(l.to) ? linkActive : linkBase
+                          } block py-5`}
+                        >
+                          {l.label}
+                        </Link>
                       ) : (
                         <a href={l.href} className={`${linkBase} block py-5`}>
                           {l.label}
@@ -277,7 +305,13 @@ export default function Navbar() {
             </div>
 
             {/* Center: true center because both outer columns are 1fr */}
-            <img src={Logo} alt="Logo" className="h-8 w-auto object-contain" />
+            <Link to="/" aria-label="Home" className="justify-self-center">
+              <img
+                src={Logo}
+                alt="Logo"
+                className="h-8 w-auto object-contain"
+              />
+            </Link>
 
             {/* Right */}
             <div className="flex items-center justify-end gap-1 sm:gap-2.5">
