@@ -1,0 +1,35 @@
+@import url("https://fonts.googleapis.com/css2?family=Pinyon+Script&family=Cormorant+Garamond:wght@400;500&display=swap");
+
+.font-script {
+    font-family: "Pinyon Script", cursive;
+    font-weight: 400;
+}
+
+.font-serif {
+    font-family: "Cormorant Garamond", Georgia, serif;
+}
+
+@keyframes marquee {
+    from {
+        transform: translateX(0);
+    }
+
+    to {
+        transform: translateX(-50%);
+    }
+}
+
+.marquee-track {
+    width: max-content;
+    animation: marquee 40s linear infinite;
+}
+
+.marquee-track>div {
+    flex: 0 0 auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .marquee-track {
+        animation: none;
+    }
+}
