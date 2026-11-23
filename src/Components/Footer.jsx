@@ -43,60 +43,12 @@ export default function Footer() {
   };
 
   return (
-    <footer className="bg-[#21131C] px-5 py-10 text-[#F7F4EF] sm:px-8 sm:py-12 lg:px-[7.7%] lg:pt-14">
-      {/* Newsletter */}
-      <div className="grid grid-cols-1 gap-7 lg:grid-cols-2 lg:items-end lg:gap-10">
-        <div>
-          <h2 className="font-script text-[32px] leading-tight sm:text-4xl lg:text-5xl">
-            Good clothes, good company.
-          </h2>
-
-          <p className="mt-3 max-w-md text-xs leading-6 text-[#D0CDCA] sm:text-sm">
-            New pieces, fabric stories and practical care notes. Sent
-            occasionally.
-          </p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="w-full">
-          <label
-            htmlFor="newsletter-email"
-            className="mb-2 block text-[11px] font-medium sm:text-xs"
-          >
-            Email address
-          </label>
-
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <input
-              id="newsletter-email"
-              type="email"
-              placeholder="Your email address"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="h-11 w-full min-w-0 rounded-lg border border-[#3B3735] bg-white px-4 text-xs text-[#282522] outline-none transition-all placeholder:text-[#8C8681] focus:border-[#C95738] focus:ring-1 focus:ring-[#C95738] sm:text-sm"
-            />
-
-            <button
-              type="submit"
-              className="h-11 w-full shrink-0 rounded-lg bg-[#F12D6F] px-7 text-xs font-medium text-white transition-colors hover:bg-[#AD452B] focus:outline-none focus:ring-2 focus:ring-[#C95738] sm:w-auto sm:rounded-full sm:text-sm"
-            >
-              Join us
-            </button>
-          </div>
-        </form>
-      </div>
-
+    <footer className="bg-[#21131C]  px-5 py-10 text-[#F7F4EF] sm:px-8 sm:py-12 lg:px-[7.7%] lg:pt-14">
       {/* Footer Content */}
-      <div className="mt-12 grid grid-cols-1 gap-y-7 sm:mt-14 sm:grid-cols-4 sm:gap-6 lg:mt-[70px] lg:grid-cols-[1.7fr_0.8fr_0.8fr_0.7fr] lg:gap-8">
+      <div className="mt-0 grid grid-cols-1 gap-y-7 sm:mt-0 sm:grid-cols-4 sm:gap-6 lg:mt-0 lg:grid-cols-[1.7fr_0.8fr_0.8fr_0.7fr] lg:gap-8">
+        {" "}
         {/* Brand */}
         <div className="col-span-1">
-          <h3 className="mt-4 text-lg sm:mt-5 sm:text-xl lg:text-2xl">
-            Woven for everyone.
-          </h3>
-
-          <p className="mt-3 max-w-sm text-xs leading-6 text-[#BDB9B5] sm:text-sm">
-            Everyday clothes, thoughtfully made for every body.
-          </p>
           <a
             href="/"
             aria-label="Home"
@@ -108,8 +60,14 @@ export default function Footer() {
               className="h-auto w-[145px] max-w-full object-contain sm:w-[165px]"
             />
           </a>
-        </div>
+          <h3 className="mt-4 text-lg sm:mt-5 sm:text-xl lg:text-2xl">
+            Woven for everyone.
+          </h3>
 
+          <p className="mt-3 max-w-sm text-xs leading-6 text-[#BDB9B5] sm:text-sm">
+            Everyday clothes, thoughtfully made for every body.
+          </p>
+        </div>
         {/* Footer Links */}
         {columns.map((column) => {
           const isOpen = openColumn === column.title;

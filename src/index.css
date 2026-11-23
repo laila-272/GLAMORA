@@ -49,3 +49,26 @@
     linear-gradient(to bottom, #000 50%, transparent 50%) left / 1px 12px repeat-y,
     linear-gradient(to bottom, #000 50%, transparent 50%) right / 1px 12px repeat-y;
 }
+/* Global Scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #c9c9c9 transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #c9c9c9;
+  border-radius: 20px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #999;
+}

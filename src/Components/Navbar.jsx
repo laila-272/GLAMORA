@@ -2,6 +2,7 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Search, User, ShoppingBag, Menu, X, ChevronDown } from "lucide-react";
 import Logo from "../assets/logo.png";
+import { useCart } from "../Context/CartContext.jsx";
 
 const announcements = [
   { text: "Free delivery over EGP 2,000", align: "text-left" },
@@ -11,13 +12,13 @@ const announcements = [
 ];
 
 const links = [
-  { label: "Shop all", href: "#shop-all" },
+  { label: "Shop all", to: "/shop" },
   { label: "Women", href: "#women", mega: true },
   { label: "Men", href: "#men" },
   { label: "Unisex", href: "#kids" },
   { label: "Brands", to: "/brands" },
-  { label: "Our story", href: "#story" },
-  { label: "Contact", href: "#contact" },
+  { label: "Our story", to: "/our-story" },
+  { label: "Contact", href: "/contact" },
 ];
 
 const megaColumns = [
@@ -59,6 +60,10 @@ const linkBase =
   "font-inter text-[14px] lg:text-[15px] text-[#625E57] transition-colors duration-200 hover:text-black";
 const linkActive =
   "font-inter text-[14px] lg:text-[15px] font-semibold text-[#f4256b]";
+
+// Active only on the exact route or its sub-routes (/brands, /brands/dior, /our-story).
+const matches = (pathname, to) =>
+  pathname === to || pathname.startsWith(`${to}/`);
 
 function MegaMenu({ id }) {
   return (
@@ -157,9 +162,7 @@ function MobileMenu({ id, onClose }) {
                 to={l.to}
                 onClick={onClose}
                 className={`block py-3.5 ${
-                  pathname.startsWith(l.to)
-                    ? "font-semibold text-[#f4256b]"
-                    : ""
+                  matches(pathname, l.to) ? "font-semibold text-[#f4256b]" : ""
                 }`}
               >
                 {l.label}
@@ -184,6 +187,7 @@ export default function Navbar() {
   const megaId = useId();
   const mobileId = useId();
   const { pathname } = useLocation();
+  const { cartCount } = useCart();
 
   const closeAll = useCallback(() => {
     setMega({ open: false, pinned: false });
@@ -288,7 +292,7 @@ export default function Navbar() {
                         <Link
                           to={l.to}
                           className={`${
-                            pathname.startsWith(l.to) ? linkActive : linkBase
+                            matches(pathname, l.to) ? linkActive : linkBase
                           } block py-5`}
                         >
                           {l.label}
@@ -318,20 +322,25 @@ export default function Navbar() {
               <button type="button" aria-label="Search" className={iconButton}>
                 <Search size={18} strokeWidth={1.5} />
               </button>
-              <button
-                type="button"
+              <Link
+                to="/account"
                 aria-label="Account"
                 className={`${iconButton} hidden md:block`}
               >
                 <User size={18} strokeWidth={1.5} />
-              </button>
-              <button
-                type="button"
-                aria-label="Shopping bag"
-                className={`${iconButton} -mr-1.5 md:mr-0`}
+              </Link>
+              <Link
+                to="/cart"
+                aria-label={`Shopping bag${cartCount ? `, ${cartCount} items` : ""}`}
+                className={`${iconButton} relative -mr-1.5 md:mr-0`}
               >
                 <ShoppingBag size={18} strokeWidth={1.5} />
-              </button>
+                {cartCount > 0 && (
+                  <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#f32970] px-1 text-[9px] font-medium leading-none text-white">
+                    {cartCount}
+                  </span>
+                )}
+              </Link>
             </div>
           </div>
         </div>
