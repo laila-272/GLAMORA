@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Search, User, ShoppingBag, Menu, X, ChevronDown } from "lucide-react";
+
 import Logo from "../assets/logo.png";
 import { useCart } from "../Context/CartContext.jsx";
 
@@ -18,7 +19,7 @@ const links = [
   { label: "Unisex", href: "#kids" },
   { label: "Brands", to: "/brands" },
   { label: "Our story", to: "/our-story" },
-  { label: "Contact", href: "/contact" },
+  { label: "Contact", to: "/contact" },
 ];
 
 const megaColumns = [
@@ -56,21 +57,19 @@ const megaColumns = [
 ];
 
 const iconButton = "p-1.5 text-ink hover:text-terracotta";
+
 const linkBase =
   "font-inter text-[14px] lg:text-[15px] text-[#625E57] transition-colors duration-200 hover:text-black";
+
 const linkActive =
   "font-inter text-[14px] lg:text-[15px] font-semibold text-[#f4256b]";
 
-// Active only on the exact route or its sub-routes (/brands, /brands/dior, /our-story).
 const matches = (pathname, to) =>
   pathname === to || pathname.startsWith(`${to}/`);
 
 function MegaMenu({ id }) {
   return (
-    <div
-      id={id}
-      className="absolute inset-x-0 top-full z-40  border-t bg-white"
-    >
+    <div id={id} className="absolute inset-x-0 top-full z-40 border-t bg-white">
       <div className="mx-auto grid max-w-[1440px] grid-cols-3 gap-8 px-8 pb-10 pt-8 lg:grid-cols-[repeat(3,minmax(0,220px))] lg:gap-20 lg:px-[6.3%]">
         {megaColumns.map((col) => (
           <section key={col.title} aria-labelledby={`${id}-${col.title}`}>
@@ -80,12 +79,13 @@ function MegaMenu({ id }) {
             >
               {col.title}
             </h3>
+
             <ul className="space-y-3">
               {col.items.map((item) => (
                 <li key={item.label}>
                   <a
                     href={item.href}
-                    className={`text-[13px] font-medium hover:text-[#C65A3A] transition-colors ${
+                    className={`text-[13px] font-medium transition-colors hover:text-[#C65A3A] ${
                       item.accent ? "text-terracotta" : "text-ink"
                     }`}
                   >
@@ -110,11 +110,11 @@ function MobileMenu({ id, onClose }) {
     <nav
       id={id}
       aria-label="Mobile"
-      className="absolute inset-x-0 top-full z-40 max-h-[calc(100vh-5rem)] overflow-y-auto  border-t border-line bg-white md:hidden"
+      className="absolute inset-x-0 top-full z-40 max-h-[calc(100vh-5rem)] overflow-y-auto border-t border-line bg-white md:hidden"
     >
       <ul className="px-5 py-2 text-[14px]">
         {links.map((l) => (
-          <li key={l.label} className=" border-line/70 last:border-0">
+          <li key={l.label} className="border-line/70 last:border-0">
             {l.mega ? (
               <>
                 <button
@@ -125,6 +125,7 @@ function MobileMenu({ id, onClose }) {
                   className="flex w-full items-center justify-between py-3.5"
                 >
                   {l.label}
+
                   <ChevronDown
                     size={16}
                     strokeWidth={1.5}
@@ -132,20 +133,24 @@ function MobileMenu({ id, onClose }) {
                     aria-hidden="true"
                   />
                 </button>
+
                 {womenOpen && (
-                  <div id={womenId} className="pb-4 ">
+                  <div id={womenId} className="pb-4">
                     {megaColumns.map((col) => (
                       <div key={col.title} className="mt-3 first:mt-0">
                         <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.16em] text-mist">
                           {col.title}
                         </p>
+
                         <ul className="space-y-2.5 pl-1">
                           {col.items.map((item) => (
                             <li key={item.label}>
                               <a
                                 href={item.href}
                                 onClick={onClose}
-                                className={`text-[13px] ${item.accent ? "text-terracotta" : "text-ink"}`}
+                                className={`text-[13px] ${
+                                  item.accent ? "text-terracotta" : "text-ink"
+                                }`}
                               >
                                 {item.label}
                               </a>
@@ -180,12 +185,13 @@ function MobileMenu({ id, onClose }) {
 }
 
 export default function Navbar() {
-  // Desktop mega menu: opens on hover, "pinned" once clicked so it survives mouse-out until toggled/clicked away.
   const [mega, setMega] = useState({ open: false, pinned: false });
   const [mobileOpen, setMobileOpen] = useState(false);
+
   const rootRef = useRef(null);
   const megaId = useId();
   const mobileId = useId();
+
   const { pathname } = useLocation();
   const { cartCount } = useCart();
 
@@ -196,12 +202,19 @@ export default function Navbar() {
 
   useEffect(() => {
     const onPointerDown = (e) => {
-      if (rootRef.current && !rootRef.current.contains(e.target)) closeAll();
+      if (rootRef.current && !rootRef.current.contains(e.target)) {
+        closeAll();
+      }
     };
-    const onKey = (e) => e.key === "Escape" && closeAll();
+
+    const onKey = (e) => {
+      if (e.key === "Escape") closeAll();
+    };
+
     document.addEventListener("mousedown", onPointerDown);
     document.addEventListener("touchstart", onPointerDown);
     document.addEventListener("keydown", onKey);
+
     return () => {
       document.removeEventListener("mousedown", onPointerDown);
       document.removeEventListener("touchstart", onPointerDown);
@@ -209,15 +222,16 @@ export default function Navbar() {
     };
   }, [closeAll]);
 
-  // Close menus whenever the route changes.
   useEffect(() => {
     closeAll();
   }, [pathname, closeAll]);
 
   const hoverOpen = () =>
     setMega((m) => (m.open ? m : { open: true, pinned: false }));
+
   const hoverClose = () =>
     setMega((m) => (m.pinned ? m : { open: false, pinned: false }));
+
   const toggleClick = () =>
     setMega((m) =>
       m.open && m.pinned
@@ -235,7 +249,7 @@ export default function Navbar() {
               {announcements.map((a, i) => (
                 <li
                   key={`${group}-${i}`}
-                  className="shrink-0 px-20 whitespace-nowrap text-sm sm:px-24 sm:text-base"
+                  className="shrink-0 whitespace-nowrap px-20 text-sm sm:px-24 sm:text-base"
                 >
                   {a.text}
                 </li>
@@ -245,9 +259,9 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Main bar + mega menu share one hover boundary so the cursor can travel between them */}
+      {/* Main bar + mega menu */}
       <div className="relative" onMouseLeave={hoverClose}>
-        <div className=" border-line bg-white">
+        <div className="border-line bg-white">
           <div className="mx-auto grid h-14 max-w-[1440px] grid-cols-[1fr_auto_1fr] items-center px-5 sm:px-8 lg:h-16 lg:px-[6.3%]">
             {/* Left */}
             <div className="flex items-center">
@@ -284,7 +298,9 @@ export default function Navbar() {
                           aria-controls={megaId}
                           aria-haspopup="true"
                           onClick={toggleClick}
-                          className={`${linkBase} py-5 ${mega.open ? "text-terracotta" : ""}`}
+                          className={`${linkBase} py-5 ${
+                            mega.open ? "text-terracotta" : ""
+                          }`}
                         >
                           {l.label}
                         </button>
@@ -308,7 +324,7 @@ export default function Navbar() {
               </nav>
             </div>
 
-            {/* Center: true center because both outer columns are 1fr */}
+            {/* Center: Logo */}
             <Link to="/" aria-label="Home" className="justify-self-center">
               <img
                 src={Logo}
@@ -317,24 +333,23 @@ export default function Navbar() {
               />
             </Link>
 
-            {/* Right */}
+            {/* Right: Icons */}
             <div className="flex items-center justify-end gap-1 sm:gap-2.5">
               <button type="button" aria-label="Search" className={iconButton}>
                 <Search size={18} strokeWidth={1.5} />
               </button>
-              <Link
-                to="/account"
-                aria-label="Account"
-                className={`${iconButton} hidden md:block`}
-              >
+
+              <Link to="/account" aria-label="Account" className={iconButton}>
                 <User size={18} strokeWidth={1.5} />
               </Link>
+
               <Link
                 to="/cart"
                 aria-label={`Shopping bag${cartCount ? `, ${cartCount} items` : ""}`}
                 className={`${iconButton} relative -mr-1.5 md:mr-0`}
               >
                 <ShoppingBag size={18} strokeWidth={1.5} />
+
                 {cartCount > 0 && (
                   <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#f32970] px-1 text-[9px] font-medium leading-none text-white">
                     {cartCount}
@@ -350,6 +365,7 @@ export default function Navbar() {
             <MegaMenu id={megaId} />
           </div>
         )}
+
         {mobileOpen && <MobileMenu id={mobileId} onClose={closeAll} />}
       </div>
     </header>
