@@ -86,49 +86,93 @@ export default function Home() {
   return (
     <main className="overflow-x-hidden text-[#2a1a1c]">
       {/* Hero */}
+
       <section
-        className="relative isolate flex min-h-[460px] items-center bg-[#fdf3f6] bg-cover bg-[position:72%_center] sm:min-h-[520px] md:bg-center lg:aspect-[2.38/1] lg:min-h-0 after:pointer-events-none after:absolute after:inset-0 after:z-0 after:bg-gradient-to-r after:from-white/85 after:via-white/55 after:to-transparent after:content-[''] lg:after:bg-none"
+        className="
+  relative isolate flex min-h-[475px] items-start
+  overflow-hidden bg-[#fff7f8] bg-cover
+  bg-[position:right_center]
+  after:pointer-events-none after:absolute after:inset-0 after:z-0
+  after:bg-[linear-gradient(90deg,rgba(255,250,251,0.88)_0%,rgba(255,250,251,0.58)_45%,rgba(255,250,251,0.12)_100%)]
+  after:content-['']
+  sm:min-h-[500px]
+  md:min-h-[540px] md:items-center md:bg-center
+  md:after:content-none
+  lg:aspect-[2.38/1] lg:min-h-0
+"
         style={{ backgroundImage: `url(${hero})` }}
       >
-        <div className="relative mx-auto w-full max-w-[1945px] px-5 py-12 sm:px-8 md:px-[7.5%] lg:py-0">
-          <div className="z-10 max-w-[480px] sm:max-w-[540px] lg:max-w-[46%]">
-            <h1 className="font-script text-[clamp(42px,6.4vw,118px)] leading-[0.95]">
+        <div
+          className="
+      relative z-10 mx-auto w-full max-w-[1945px]
+      px-[30px] pt-[55px] pb-6
+      sm:px-10 sm:pt-12
+      md:px-[7.5%] md:py-0
+    "
+        >
+          <div className="relative z-10 w-full md:max-w-[500px] lg:max-w-[46%]">
+            <h1
+              className="
+          font-script text-[clamp(50px,11.8vw,62px)]
+          leading-[0.98] tracking-[-0.025em]
+          md:text-[clamp(70px,8vw,130px)]
+          md:leading-[0.95]
+        "
+            >
               Your scent.
               <br />
-              <span className="ml-[0.2em] sm:ml-[0.35em]">Your signature.</span>
+              <span className="ml-[0.25em]">Your signature.</span>
             </h1>
-            <p className="mt-4 max-w-[26em] text-[13px] leading-relaxed sm:text-[15px] lg:text-[clamp(13px,1.05vw,18px)] lg:leading-snug">
+
+            <p
+              className="
+          mt-[22px] max-w-[430px]
+          text-[18px] leading-[1.6]
+          sm:text-[19px]
+          md:mt-4 md:text-[15px] md:leading-relaxed
+          lg:text-[clamp(13px,1.05vw,18px)]
+        "
+            >
               Original imported perfumes from iconic international brands.
               Discover your next signature.
             </p>
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+
+            <div
+              className="
+          mt-[38px] flex flex-col gap-3
+          sm:mt-8
+          md:flex-row md:flex-wrap
+        "
+            >
               <a
                 href="/shop?filter=new"
-                className="rounded-full bg-[#f4256b] px-6 py-3 text-center text-[13px] font-semibold text-white transition-opacity hover:opacity-90 sm:py-2.5 lg:text-[clamp(12px,0.9vw,15px)]"
+                className="
+            flex h-[64px] w-full items-center justify-center
+            rounded-full bg-[#f4256b] px-6
+            text-[16px] font-semibold text-white
+            transition-opacity hover:opacity-90
+            md:h-11 md:w-auto md:px-6 md:text-[13px]
+          "
               >
                 Shop new arrivals
               </a>
+
               <a
                 href="/shop"
-                className="rounded-full border border-[#e6d6da] bg-white/80 px-6 py-3 text-center text-[13px] transition-colors hover:bg-white sm:py-2.5 lg:text-[clamp(12px,0.9vw,15px)]"
+                className="
+            flex h-[36px] w-full items-center justify-center
+            text-[16px] font-medium text-[#f4256b]
+            transition-opacity hover:opacity-75
+            md:h-10 md:w-auto md:rounded-full
+            md:border md:border-[#e6d6da]
+            md:bg-white/90 md:px-6 md:text-[13px]
+            md:text-[#2a1a1c]
+          "
               >
                 Explore the edit
               </a>
             </div>
           </div>
-        </div>
-
-        <div className="absolute bottom-3.5 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5">
-          {slides.map((i) => (
-            <button
-              key={i}
-              aria-label={`Slide ${i + 1}`}
-              onClick={() => setSlide(i)}
-              className={`h-1.5 rounded-full transition-all ${
-                i === slide ? "w-6 bg-[#f4256b]" : "w-1.5 bg-[#f4a9c2]"
-              }`}
-            />
-          ))}
         </div>
       </section>
 
@@ -230,27 +274,40 @@ export default function Home() {
       <Categories />
 
       {/* Secondary Banner (After dark) */}
+
       <section
-        className="relative isolate flex min-h-[440px] items-center bg-[#fdf3f6] bg-cover bg-[position:70%_center] sm:min-h-[500px] md:bg-center lg:aspect-[2.38/1] lg:min-h-0 after:pointer-events-none after:absolute after:inset-0 after:z-0 after:bg-gradient-to-r after:from-white/85 after:via-white/55 after:to-transparent after:content-[''] lg:after:bg-none"
+        className="
+    relative isolate flex min-h-[440px] items-center overflow-hidden
+    bg-[#fdf3f6] bg-cover bg-[position:70%_center]
+    sm:min-h-[500px]
+    md:bg-center
+    after:pointer-events-none after:absolute after:inset-0 after:z-0
+    after:bg-[linear-gradient(90deg,rgba(253,243,246,0.88)_0%,rgba(253,243,246,0.62)_45%,rgba(253,243,246,0.08)_100%)]
+    after:content-['']
+    md:after:content-none
+    lg:aspect-[2.38/1] lg:min-h-0
+  "
         style={{ backgroundImage: `url(${sign})` }}
       >
-        <div className="relative mx-auto w-full max-w-[1945px] px-5 py-12 sm:px-8 md:px-[7.5%] lg:py-0">
-          <div className="z-10 max-w-[480px] sm:max-w-[540px] lg:max-w-[46%]">
-            <h2 className="font-script text-[clamp(42px,6.4vw,118px)] leading-[0.95]">
+        <div className="relative z-10 mx-auto w-full max-w-[1945px] px-5 pb-16 pt-16 sm:px-8 sm:pb-16 sm:pt-20 md:px-[7.5%] md:py-0">
+          <div className="max-w-[480px] sm:max-w-[540px] lg:max-w-[46%]">
+            <h2 className="font-script text-[clamp(50px,11.8vw,66px)] leading-[0.98] md:text-[clamp(42px,6.4vw,118px)] md:leading-[0.95]">
               After dark.
               <br />
               <span className="ml-[0.2em] sm:ml-[0.35em]">Your signature.</span>
             </h2>
+
             <p className="mt-4 max-w-[26em] text-[13px] leading-relaxed sm:text-[15px] lg:text-[clamp(13px,1.05vw,18px)] lg:leading-snug">
               Discover Tom Ford Oud Wood. An iconic scent for your fragrance
               collection.
             </p>
+
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <a
                 href="/shop?filter=new"
                 className="rounded-full bg-[#f4256b] px-6 py-3 text-center text-[13px] font-semibold text-white transition-opacity hover:opacity-90 sm:py-2.5 lg:text-[clamp(12px,0.9vw,15px)]"
               >
-                Shop new arrivals
+                Discover Oud
               </a>
             </div>
           </div>
