@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { brands, countFor } from "../data/brands";
+import { brands, countFor } from "../data/Brands.js";
 import "../index.css";
 
 export default function Brands() {

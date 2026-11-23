@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { Heart, Minus, Plus, Share2 } from "lucide-react";
 import { allProducts, extraProducts } from "../data/Brands.js";
 import { useCart } from "../Context/CartContext";
-import { useAccount } from "../context/AccountContext";
+import { useAccount } from "../Context/AccountContext.jsx";
 
 const FAMILIES = ["Floral", "Woody", "Oriental", "Fresh"];
 const VOLUMES = [30, 50, 100];

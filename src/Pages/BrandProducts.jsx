@@ -1,6 +1,6 @@
 import { Link, useParams } from "react-router-dom";
 import ProductListing from "./ProductListing";
-import { brands, products } from "../data/brands";
+import { brands, products } from "../data/Brands.js";
 
 export default function BrandProducts() {
   const { brandName } = useParams();

@@ -1,6 +1,6 @@
 import { useSearchParams } from "react-router-dom";
 import ProductListing from "./ProductListing";
-import { products } from "../data/brands";
+import { products } from "../data/Brands.js";
 
 const GENDERS = { women: "Women", men: "Men", unisex: "Unisex" };
 
