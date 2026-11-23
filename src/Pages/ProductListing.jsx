@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Heart, ChevronDown, SlidersHorizontal } from "lucide-react";
-import { brands } from "../data/brands";
-import { useAccount } from "../context/AccountContext";
+import { brands } from "../data.js";
+import { useAccount } from "../Context/AccountContext";
 
 const FAMILIES = ["Floral", "Woody", "Oriental", "Fresh"];
 const MAX_PRICE = 2000;
