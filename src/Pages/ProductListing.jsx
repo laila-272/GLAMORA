@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Heart, ChevronDown, SlidersHorizontal } from "lucide-react";
-import { brands } from "../data.js";
+import { brands } from "../data/Brands.js";
 import { useAccount } from "../Context/AccountContext";
 
 const FAMILIES = ["Floral", "Woody", "Oriental", "Fresh"];
