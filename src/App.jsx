@@ -1,5 +1,6 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Layout from "./Components/Layout.jsx";
+import { AuthProvider } from "./Context/AuthContext";
 
 import "./App.css";
 import Home from "./Pages/Home";
@@ -57,9 +58,11 @@ function App() {
   // One CartProvider wrapping the router, so every page shares the same cart.
   return (
     <AccountProvider>
-      <CartProvider>
-        <RouterProvider router={router} />
-      </CartProvider>
+      <AuthProvider>
+        <CartProvider>
+          <RouterProvider router={router} />
+        </CartProvider>
+      </AuthProvider>
     </AccountProvider>
   );
 }

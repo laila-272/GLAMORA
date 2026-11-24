@@ -93,9 +93,7 @@ export default function Home() {
   overflow-hidden bg-[#fff7f8] bg-cover
   bg-[position:right_center]
   after:pointer-events-none after:absolute after:inset-0 after:z-0
-  after:bg-[linear-gradient(90deg,rgba(255,250,251,0.88)_0%,rgba(255,250,251,0.58)_45%,rgba(255,250,251,0.12)_100%)]
-  after:content-['']
-  sm:min-h-[500px]
+after:bg-[linear-gradient(90deg,rgba(255,255,255,0.9)_0%,rgba(255,255,255,0.55)_40%,rgba(0,0,0,0.4)_100%)]  sm:min-h-[500px]
   md:min-h-[540px] md:items-center md:bg-center
   md:after:content-none
   lg:aspect-[2.38/1] lg:min-h-0

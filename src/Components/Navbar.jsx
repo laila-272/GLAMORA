@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Search, User, ShoppingBag, Menu, X, ChevronDown } from "lucide-react";
+import { useAuth } from "../Context/AuthContext";
 
 import Logo from "../assets/logo.png";
 import { useCart } from "../Context/CartContext.jsx";
@@ -194,6 +195,7 @@ export default function Navbar() {
 
   const { pathname } = useLocation();
   const { cartCount } = useCart();
+const { isAuthenticated, openAuth } = useAuth();
 
   const closeAll = useCallback(() => {
     setMega({ open: false, pinned: false });
@@ -339,9 +341,24 @@ export default function Navbar() {
                 <Search size={18} strokeWidth={1.5} />
               </Link>
 
-              <Link to="/account" aria-label="Account" className={iconButton}>
-                <User size={18} strokeWidth={1.5} />
-              </Link>
+              {isAuthenticated ? (
+                <Link
+                  to="/account"
+                  aria-label="Account"
+                  className={`${iconButton} hidden md:block`}
+                >
+                  <User size={18} strokeWidth={1.5} />
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  onClick={openAuth}
+                  aria-label="Sign in"
+                  className={`${iconButton} hidden md:block`}
+                >
+                  <User size={18} strokeWidth={1.5} />
+                </button>
+              )}
 
               <Link
                 to="/cart"
