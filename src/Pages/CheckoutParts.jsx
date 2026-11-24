@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronDown } from "lucide-react";
 import { useCart, egp } from "../Context/CartContext.jsx";
-
+import { ChevronDown, Check } from "lucide-react";
 const inputCls =
   "h-10 w-full rounded-xl border border-[#eae7e9] bg-white px-4 text-[11px] text-[#292329] outline-none placeholder:text-[#b9b3b8] focus:border-[#f72568]";
 
@@ -83,13 +82,17 @@ export function SelectInput({
   );
 }
 
+
 export function CheckoutSteps({ current = 1 }) {
   const steps = ["Contact & delivery", "Payment & review", "Confirmation"];
+
   return (
     <ol className="mx-auto mt-4 flex max-w-[820px] items-center justify-between gap-2 px-4 text-[11px]">
       {steps.map((label, i) => {
         const n = i + 1;
         const active = n === current;
+        const completed = n < current;
+
         return (
           <li
             key={label}
@@ -97,12 +100,19 @@ export function CheckoutSteps({ current = 1 }) {
             aria-current={active ? "step" : undefined}
           >
             <span
-              className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-medium ${active ? "bg-[#f72568] text-white" : "bg-[#fde8ef] text-[#6d656c]"}`}
+              className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-medium ${
+                active || completed
+                  ? "bg-[#f72568] text-white"
+                  : "bg-[#fde8ef] text-[#6d656c]"
+              }`}
             >
-              {n}
+              {completed ? <Check size={13} /> : n}
             </span>
+
             <span
-              className={`${active ? "text-[#f72568]" : "hidden text-[#6d656c] sm:inline"}`}
+              className={`${
+                active ? "text-[#f72568]" : "hidden text-[#6d656c] sm:inline"
+              }`}
             >
               {label}
             </span>
@@ -112,6 +122,7 @@ export function CheckoutSteps({ current = 1 }) {
     </ol>
   );
 }
+
 
 export function GuestBanner() {
   const [note, setNote] = useState(false);

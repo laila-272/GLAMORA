@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../Context/CartContext.jsx";
 import {
   CheckoutSteps,
@@ -12,6 +12,7 @@ import {
 } from "./CheckoutParts";
 
 const KEY = "glamora-checkout-v1";
+
 const blank = {
   email: "",
   phone: "",
@@ -27,7 +28,10 @@ const blank = {
 
 const load = () => {
   try {
-    return { ...blank, ...JSON.parse(localStorage.getItem(KEY) || "{}") };
+    return {
+      ...blank,
+      ...JSON.parse(localStorage.getItem(KEY) || "{}"),
+    };
   } catch {
     return blank;
   }
@@ -35,10 +39,10 @@ const load = () => {
 
 export default function Checkout() {
   const { cartItems } = useCart();
-  const [values, setValues] = useState(load);
-  const [saved, setSaved] = useState(false);
+  const navigate = useNavigate();
 
-  // Keep what the shopper typed if they refresh or go back to the cart.
+  const [values, setValues] = useState(load);
+
   useEffect(() => {
     try {
       localStorage.setItem(KEY, JSON.stringify(values));
@@ -48,14 +52,15 @@ export default function Checkout() {
   }, [values]);
 
   const onChange = (e) => {
-    setSaved(false);
-    setValues((v) => ({ ...v, [e.target.name]: e.target.value }));
+    setValues((v) => ({
+      ...v,
+      [e.target.name]: e.target.value,
+    }));
   };
 
-  // The browser validates required fields and the email/phone formats before this runs.
   const onSubmit = (e) => {
     e.preventDefault();
-    setSaved(true); // TODO: navigate to the Payment & review step once it exists
+    navigate("/payment-review");
   };
 
   return (
@@ -73,6 +78,7 @@ export default function Checkout() {
         <h1 className="font-serif text-[38px] font-medium leading-none md:text-[48px]">
           Contact &amp; delivery
         </h1>
+
         <p className="mt-4 text-[13px] text-[#6d656c]">
           A few details, so your scents can find their way to you.
         </p>
@@ -89,10 +95,15 @@ export default function Checkout() {
         <div className="mt-7 grid gap-8 lg:grid-cols-[64fr_33fr] lg:gap-7">
           <form onSubmit={onSubmit} className="space-y-6">
             <GuestBanner />
+
             <ContactForm values={values} onChange={onChange} />
+
             <hr className="border-[#eae7e9]" />
+
             <DeliveryForm values={values} onChange={onChange} />
+
             <DeliveryOption />
+
             <div className="flex flex-wrap items-center justify-between gap-4">
               <button
                 type="submit"
@@ -100,15 +111,11 @@ export default function Checkout() {
               >
                 Continue to payment
               </button>
+
               <CheckoutBackLink />
             </div>
-            <p
-              role="status"
-              className="min-h-[14px] text-[10px] text-[#f72568]"
-            >
-              {saved && "Details saved. The payment step isn't built yet."}
-            </p>
           </form>
+
           <OrderSummary />
         </div>
       )}

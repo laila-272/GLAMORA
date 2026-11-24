@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Heart, Search as SearchIcon } from "lucide-react";
+
 import { allProducts } from "../data/Brands";
 import { useAccount } from "../Context/AccountContext";
 import { egp } from "../Context/CartContext";
@@ -15,9 +16,11 @@ const SUGGESTIONS = [
   "fresh citrus",
   "warm woods",
 ];
-const RECOMMENDED_IDS = [8, 10, 9]; // Dior J'adore, YSL Libre, Coco Mademoiselle
 
-// Words that carry no meaning for matching ("floral perfumes" -> "floral").
+const EMPTY_SUGGESTIONS = ["Dior", "Oud", "Floral"];
+
+const RECOMMENDED_IDS = [8, 10, 9];
+
 const STOPWORDS = new Set([
   "scent",
   "scents",
@@ -31,8 +34,7 @@ const STOPWORDS = new Set([
   "and",
   "of",
 ]);
-// Everyday phrases mapped onto the catalogue's own vocabulary (scent family / gender).
-// Aliases match whole words only, so "men" never matches "women".
+
 const ALIASES = {
   her: ["women"],
   him: ["men"],
@@ -71,17 +73,23 @@ function haystack(p) {
       .filter(Boolean)
       .join(" "),
   );
-  return { text, words: new Set(text.split(/[^a-z0-9]+/).filter(Boolean)) };
+
+  return {
+    text,
+    words: new Set(text.split(/[^a-z0-9]+/).filter(Boolean)),
+  };
 }
 
-/** Every meaningful word of the query must match name, brand, family, notes, gender, etc. */
 export function searchProducts(query, products = allProducts) {
   const tokens = norm(query)
     .split(/[^a-z0-9]+/)
     .filter((t) => t && !STOPWORDS.has(t));
+
   if (!tokens.length) return [];
+
   return products.filter((p) => {
     const { text, words } = haystack(p);
+
     return tokens.every((t) =>
       ALIASES[t] ? ALIASES[t].some((a) => words.has(a)) : text.includes(t),
     );
@@ -91,6 +99,7 @@ export function searchProducts(query, products = allProducts) {
 function ProductCard({ product: p }) {
   const { isSaved, toggleSaved } = useAccount();
   const liked = isSaved(p.id);
+
   return (
     <article className="relative">
       <button
@@ -107,6 +116,7 @@ function ProductCard({ product: p }) {
           className={liked ? "fill-[#f72568] text-[#f72568]" : "text-[#f72568]"}
         />
       </button>
+
       <Link to={`/product/${p.id}`} className="block">
         <div className="flex h-[260px] items-end justify-center px-4 pt-8 md:h-[340px]">
           <img
@@ -115,32 +125,90 @@ function ProductCard({ product: p }) {
             className="max-h-full max-w-full object-contain"
           />
         </div>
+
         <h3 className="mt-4 font-serif text-[16px] font-semibold leading-tight">
           {p.name}
         </h3>
+
         <p className="mt-1.5 text-[10px] text-[#888087]">
           {p.brandName} · {p.note} · {p.size}ml
         </p>
+
         <p className="mt-2 text-[12px] font-semibold">{egp(p.price)}</p>
       </Link>
     </article>
   );
 }
 
+// Search Empty State
+function SearchEmptyState({ query, onSearch }) {
+  return (
+    <div className="flex flex-col items-center px-4 pb-10 pt-4 text-center">
+      {/* Search Icon */}
+      <div className="relative flex h-[114px] w-[114px] items-center justify-center rounded-full bg-[#fff6f9]">
+        <SearchIcon size={58} strokeWidth={1.7} className="text-[#a99da3]" />
+
+        <span className="absolute left-[43px] top-[49px] h-[4px] w-[17px] rounded-full bg-[#f72568]" />
+      </div>
+
+      {/* Heading */}
+      <h2 className="mt-2 font-serif text-[20px] font-medium text-[#30252c]">
+        No scents found this time.
+      </h2>
+
+      {/* Description */}
+      <p className="mt-2 max-w-[340px] text-[11px] leading-[1.7] text-[#777078]">
+        We couldn't find a match for "{query}".
+        <br />
+        Try another fragrance name, brand or scent note.
+      </p>
+
+      {/* Browse Button */}
+      <Link
+        to="/shop"
+        className="mt-4 inline-flex h-[36px] min-w-[136px] items-center justify-center rounded-full bg-[#f72568] px-6 text-[11px] font-medium text-white transition-colors hover:bg-[#df1758]"
+      >
+        Browse all fragrances
+      </Link>
+
+      {/* Suggestions */}
+      <div className="mt-[46px] flex flex-wrap justify-center gap-2">
+        {EMPTY_SUGGESTIONS.map((suggestion) => (
+          <button
+            key={suggestion}
+            type="button"
+            onClick={() => onSearch(suggestion)}
+            className="flex h-[22px] min-w-[73px] items-center justify-center rounded-full bg-[#fff6f9] px-4 text-[9px] text-[#51464e] transition-colors hover:bg-[#ffeaf1]"
+          >
+            {suggestion}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function Search() {
   const [params, setParams] = useSearchParams();
+
   const query = (params.get("q") || "").trim();
+
   const [input, setInput] = useState(query);
 
- const run = (q) => {
-   setInput(q);
-   const value = q.trim();
+  const run = (q) => {
+    setInput(q);
 
-   setParams(value ? { q: value } : {}, { replace: true });
- };
+    const value = q.trim();
+
+    setParams(value ? { q: value } : {}, {
+      replace: true,
+    });
+  };
+
   const clear = () => run("");
 
   const results = useMemo(() => (query ? searchProducts(query) : []), [query]);
+
   const recommended = useMemo(
     () =>
       RECOMMENDED_IDS.map((id) => allProducts.find((p) => p.id === id)).filter(
@@ -148,11 +216,14 @@ export default function Search() {
       ),
     [],
   );
+
   const searching = query.length > 0;
+
   const shown = searching ? results : recommended;
 
   return (
     <main className="mx-auto max-w-[1240px] px-4 pb-20 pt-6 text-[#292329] md:px-6">
+      {/* Breadcrumb */}
       <nav className="text-[10px] text-[#6d656c]" aria-label="Breadcrumb">
         <Link to="/" className="hover:underline">
           Home
@@ -160,49 +231,58 @@ export default function Search() {
         / <span>Search</span>
       </nav>
 
-      <header className="mt-4">
-        <h1 className="font-serif text-[38px] font-medium leading-tight md:text-[48px]">
-          Find your signature.
+      {/* Page Heading */}
+      <header className="mt-3">
+        <h1 className="font-serif text-[28px] font-medium leading-tight md:text-[38px]">
+          {searching ? "Search results" : "Find your signature."}
         </h1>
-        <p className="mt-2 text-[14px]">
-          A soft floral. A warm oud. A fragrance that feels like you.
-        </p>
+
+        {!searching && (
+          <p className="mt-2 text-[12px]">
+            A soft floral. A warm oud. A fragrance that feels like you.
+          </p>
+        )}
       </header>
 
-      <div className="mt-5 border border-[#d9d4d7]">
-        <form
-          role="search"
-          onSubmit={(e) => {
-            e.preventDefault();
-            run(input);
-          }}
-          className="flex border-b border-[#e8e4e6]"
-        >
-          <label htmlFor="site-search" className="sr-only">
-            Search perfumes
-          </label>
-          <input
-            id="site-search"
-            type="search"
-            value={input}
-            onChange={(e) => run(e.target.value)}
-            placeholder={'Try "rose", "oud" or "musk"'}
-            autoComplete="off"
-            className="h-12 min-w-0 flex-1 bg-white px-4 text-[12px] outline-none placeholder:text-[#8a8388]"
-          />
-          <button
-            type="submit"
-            aria-label="Search"
-            className="flex h-12 w-12 shrink-0 items-center justify-center bg-[#f72568] text-white"
-          >
-            <SearchIcon size={15} />
-          </button>
-        </form>
+      {/* Search Bar */}
+      <form
+        role="search"
+        onSubmit={(e) => {
+          e.preventDefault();
+          run(input);
+        }}
+        className="mt-3 flex h-[40px] border border-[#e8e4e6]"
+      >
+        <label htmlFor="site-search" className="sr-only">
+          Search perfumes
+        </label>
 
-        <section className="p-4" aria-labelledby="discovery-title">
+        <input
+          id="site-search"
+          type="search"
+          value={input}
+          onChange={(e) => run(e.target.value)}
+          placeholder={'Try "rose", "oud" or "musk"'}
+          autoComplete="off"
+          className="h-full min-w-0 flex-1 bg-white px-3 text-[11px] outline-none placeholder:text-[#8a8388]"
+        />
+
+        <button
+          type="submit"
+          aria-label="Search"
+          className="flex h-full w-[40px] shrink-0 items-center justify-center bg-[#f72568] text-white"
+        >
+          <SearchIcon size={14} />
+        </button>
+      </form>
+
+      {/* Search Discovery - Only when no query */}
+      {!searching && (
+        <section className="mt-4" aria-labelledby="discovery-title">
           <h2 id="discovery-title" className="text-[10px] font-semibold">
             Search Discovery
           </h2>
+
           <ul className="mt-3 flex flex-wrap gap-2">
             {SUGGESTIONS.map((s) => (
               <li key={s}>
@@ -217,70 +297,65 @@ export default function Search() {
             ))}
           </ul>
         </section>
-      </div>
+      )}
 
-      <hr className="mt-10 border-[#eae7e9]" />
+      {/* Search Results */}
+      <section className={searching ? "mt-3" : "mt-10"} aria-live="polite">
+        {searching ? (
+          <>
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-[10px] text-[#6d656c]">
+                {results.length} {results.length === 1 ? "result" : "results"}{" "}
+                for "{query}"
+              </p>
 
-      <section className="mt-8" aria-live="polite">
-        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
-          <div>
-            <h2 className="font-serif text-[28px] font-semibold leading-tight md:text-[32px]">
-              {searching ? "Search results" : "A good place to start."}
-            </h2>
-            <p className="mt-2 text-[11px] text-[#6d656c]">
-              {searching
-                ? `${results.length} ${results.length === 1 ? "result" : "results"} for “${query}”`
-                : "Fragrant favourites, thoughtfully chosen. A little inspiration while you look."}
-            </p>
-          </div>
-          {searching ? (
-            <button
-              type="button"
-              onClick={clear}
-              className="text-[11px] text-[#f72568] underline underline-offset-2"
-            >
-              Clear search
-            </button>
-          ) : (
-            <Link
-              to="/shop"
-              className="text-[11px] text-[#f72568] underline underline-offset-2"
-            >
-              Shop all →
-            </Link>
-          )}
-        </div>
-
-        {shown.length === 0 ? (
-          <div className="py-16 text-center">
-            <p className="font-serif text-[22px]">
-              No scents matched “{query}”.
-            </p>
-            <p className="mt-2 text-[12px] text-[#6d656c]">
-              Try a brand, a note or a scent family — or browse everything.
-            </p>
-            <div className="mt-4 flex justify-center gap-5 text-[12px]">
               <button
                 type="button"
                 onClick={clear}
-                className="text-[#f72568] underline underline-offset-2"
+                className="text-[10px] text-[#f72568] underline underline-offset-2"
               >
                 Clear search
               </button>
+            </div>
+
+            {results.length === 0 ? (
+              <SearchEmptyState query={query} onSearch={run} />
+            ) : (
+              <div className="mt-6 grid grid-cols-2 gap-x-6 gap-y-12 md:grid-cols-3">
+                {results.map((p) => (
+                  <ProductCard key={p.id} product={p} />
+                ))}
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
+              <div>
+                <h2 className="font-serif text-[28px] font-semibold leading-tight md:text-[32px]">
+                  A good place to start.
+                </h2>
+
+                <p className="mt-2 text-[11px] text-[#6d656c]">
+                  Fragrant favourites, thoughtfully chosen. A little inspiration
+                  while you look.
+                </p>
+              </div>
+
               <Link
                 to="/shop"
-                className="text-[#f72568] underline underline-offset-2"
+                className="text-[11px] text-[#f72568] underline underline-offset-2"
               >
                 Shop all →
               </Link>
             </div>
-          </div>
-        ) : (
-          <div className="mt-6 grid grid-cols-2 gap-x-6 gap-y-12 md:grid-cols-3">
-            {shown.map((p) => (
-              <ProductCard key={p.id} product={p} />
-            ))}
-          </div>
+
+            <div className="mt-6 grid grid-cols-2 gap-x-6 gap-y-12 md:grid-cols-3">
+              {recommended.map((p) => (
+                <ProductCard key={p.id} product={p} />
+              ))}
+            </div>
+          </>
         )}
       </section>
     </main>

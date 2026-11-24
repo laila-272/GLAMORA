@@ -14,17 +14,17 @@ const columns = [
   {
     title: "HELP",
     links: [
-      { label: "Your bag", href: "#cart" },
-      { label: "Delivery & returns", href: "#delivery" },
+      { label: "Your bag", href: "/cart" },
+      { label: "Delivery & returns", href: "/delivery-returns" },
       { label: "Size guide", href: "#size-guide" },
     ],
   },
   {
     title: "BRAND",
     links: [
-      { label: "Our story", href: "#story" },
+      { label: "Our story", href: "/our-story" },
       { label: "Materials", href: "#materials" },
-      { label: "Contact", href: "#contact" },
+      { label: "Contact", href: "/contact" },
     ],
   },
 ];

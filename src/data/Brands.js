@@ -188,3 +188,5 @@ export const allProducts = [...products, ...extraProducts];
 
 export const countFor = (slug) =>
   products.filter((p) => p.brand === slug).length;
+
+

@@ -6,9 +6,9 @@ import { useAccount } from "../../Context/AccountContext";
 // Link targets for the "You might find it here." card. Only the routes marked ✓ exist in the app today;
 // change the others here once those pages exist.
 const HELP_LINKS = [
-  { label: "Help & scent guide", to: "/delivery-returns" }, // placeholder: no scent-guide page yet
+  // { label: "Help & scent guide", to: "/delivery-returns" }, // placeholder: no scent-guide page yet
   { label: "Delivery & returns", to: "/delivery-returns" }, // ✓
-  { label: "Notes & care", to: "/shop" }, // placeholder: no notes & care page yet
+  // { label: "Notes & care", to: "/shop" }, // placeholder: no notes & care page yet
   { label: "My orders", to: "/account/orders" }, // ✓
 ];
 const TOPICS = [
