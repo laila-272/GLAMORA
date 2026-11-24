@@ -354,7 +354,7 @@ const { isAuthenticated, openAuth } = useAuth();
                   type="button"
                   onClick={openAuth}
                   aria-label="Sign in"
-                  className={`${iconButton} hidden md:block`}
+                  className={`${iconButton} `}
                 >
                   <User size={18} strokeWidth={1.5} />
                 </button>
