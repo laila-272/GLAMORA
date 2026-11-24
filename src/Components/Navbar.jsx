@@ -335,9 +335,9 @@ export default function Navbar() {
 
             {/* Right: Icons */}
             <div className="flex items-center justify-end gap-1 sm:gap-2.5">
-              <button type="button" aria-label="Search" className={iconButton}>
+              <Link to="/search" aria-label="Search" className={iconButton}>
                 <Search size={18} strokeWidth={1.5} />
-              </button>
+              </Link>
 
               <Link to="/account" aria-label="Account" className={iconButton}>
                 <User size={18} strokeWidth={1.5} />
