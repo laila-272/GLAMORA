@@ -8,7 +8,7 @@ import {
   requestEmailCode,
   verifyEmailCode,
   signInWithGoogle,
-} from "./authService";
+} from "./AuthService.js";
 // import "../Styles/Home.css";
 import signin from "../../assets/signin.png";
 import code from "../../assets/code.png";
