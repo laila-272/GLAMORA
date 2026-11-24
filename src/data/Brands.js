@@ -4,18 +4,23 @@ import menImg from "../assets/e/01/men.png";
 import unisexImg from "../assets/e/01/uni.png";
 import newImg from "../assets/e/01/new.png";
 import giftImg from "../assets/e/01/gift.png";
+import armani from "../assets/Brands/ysl.png"
+import chanel from "../assets/Brands/chanel.png"
+import tom from "../assets/Brands/tom.png"
+import you from "../assets/Brands/you.png"
+import dior from "../assets/Brands/dior.png"
 export const brands = [
-  { slug: "armani", name: "Armani", image: "/images/brand-armani.jpg" },
-  { slug: "chanel", name: "Chanel", image: "/images/brand-chanel.jpg" },
-  { slug: "dior", name: "Dior", image: "/images/brand-dior.jpg" },
+  { slug: "armani", name: "Armani", image: armani },
+  { slug: "chanel", name: "Chanel", image:chanel },
+  { slug: "dior", name: "Dior", image: dior },
   {
     slug: "jo-malone",
     name: "Jo Malone",
-    image: "/images/brand-jo-malone.jpg",
+    image: chanel,
   },
-  { slug: "le-labo", name: "Le Labo", image: "/images/brand-le-labo.jpg" },
-  { slug: "tom-ford", name: "Tom Ford", image: "/images/brand-tom-ford.jpg" },
-  { slug: "ysl", name: "YSL", image: "/images/brand-ysl.jpg" },
+  { slug: "le-labo", name: "Le Labo", image: tom },
+  { slug: "tom-ford", name: "Tom Ford", image: you },
+  { slug: "ysl", name: "YSL", image: tom },
 ];
 
 export const products = [
