@@ -3,7 +3,11 @@ import { Link } from "react-router-dom";
 import { Heart, ChevronDown, SlidersHorizontal } from "lucide-react";
 import { brands } from "../data/Brands.js";
 import { useAccount } from "../Context/AccountContext";
-
+import womenImg from "../assets/e/01/women.png";
+import menImg from "../assets/e/01/men.png";
+import unisexImg from "../assets/e/01/uni.png";
+import newImg from "../assets/e/01/new.png";
+import giftImg from "../assets/e/01/gift.png";
 const FAMILIES = ["Floral", "Woody", "Oriental", "Fresh"];
 const MAX_PRICE = 2000;
 const egp = (n) => `EGP ${n.toLocaleString("en-US")}`;

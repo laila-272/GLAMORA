@@ -1,4 +1,9 @@
 /* Image files go in /public/images. Prices are illustrative (the pages say so). */
+import womenImg from "../assets/e/01/women.png";
+import menImg from "../assets/e/01/men.png";
+import unisexImg from "../assets/e/01/uni.png";
+import newImg from "../assets/e/01/new.png";
+import giftImg from "../assets/e/01/gift.png";
 export const brands = [
   { slug: "armani", name: "Armani", image: "/images/brand-armani.jpg" },
   { slug: "chanel", name: "Chanel", image: "/images/brand-chanel.jpg" },
@@ -27,7 +32,7 @@ export const products = [
     price: 1050,
     isNew: false,
     added: 4,
-    img: "/images/cat-unisex.png",
+    img: womenImg,
   },
   {
     id: 2,
@@ -42,7 +47,7 @@ export const products = [
     price: 1290,
     isNew: false,
     added: 3,
-    img: "/images/cat-men.png",
+    img: menImg,
   },
   {
     id: 3,
@@ -57,7 +62,7 @@ export const products = [
     price: 1350,
     isNew: true,
     added: 7,
-    img: "/images/cat-new.png",
+    img: unisexImg,
   },
   {
     id: 4,
@@ -72,7 +77,7 @@ export const products = [
     price: 1490,
     isNew: true,
     added: 6,
-    img: "/images/product-le-labo.png",
+    img: newImg,
   },
   {
     id: 5,
@@ -87,7 +92,7 @@ export const products = [
     price: 450,
     isNew: false,
     added: 2,
-    img: "/images/product-ysl.png",
+    img: giftImg,
   },
   {
     id: 6,
@@ -102,7 +107,7 @@ export const products = [
     price: 850,
     isNew: true,
     added: 5,
-    img: "/images/cat-gift.png",
+    img: womenImg,
   },
   {
     id: 7,
@@ -117,7 +122,7 @@ export const products = [
     price: 790,
     isNew: true,
     added: 1,
-    img: "/images/product-armani.png",
+    img: menImg,
   },
 ];
 
@@ -137,13 +142,8 @@ export const extraProducts = [
     price: 1190,
     isNew: false,
     added: 8,
-    img: "/images/product-jadore.png",
-    gallery: [
-      "/images/product-jadore.png",
-      "/images/jadore-2.png",
-      "/images/jadore-3.png",
-      "/images/jadore-4.png",
-    ],
+    img: womenImg,
+    gallery: [womenImg, menImg, unisexImg, giftImg],
     keyNotes:
       "Ylang-ylang, Damascus rose and jasmine. The brand does not specify a top / heart / base pyramid here.",
   },
@@ -160,7 +160,7 @@ export const extraProducts = [
     price: 690,
     isNew: true,
     added: 9,
-    img: "/images/cat-women.png",
+    img: menImg,
   },
   {
     id: 10,
@@ -175,7 +175,7 @@ export const extraProducts = [
     price: 1590,
     isNew: true,
     added: 10,
-    img: "/images/product-libre.png",
+    img: unisexImg,
   },
 ];
 
