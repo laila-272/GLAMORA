@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../Context/CartContext.jsx";
+
 import {
   CheckoutSteps,
   GuestBanner,
@@ -38,7 +39,8 @@ const load = () => {
 };
 
 export default function Checkout() {
-  const { cartItems } = useCart();
+  const { cartItems, productsLoading, productsError } = useCart();
+
   const navigate = useNavigate();
 
   const [values, setValues] = useState(load);
@@ -47,13 +49,13 @@ export default function Checkout() {
     try {
       localStorage.setItem(KEY, JSON.stringify(values));
     } catch {
-      /* ignore */
+      // Ignore storage errors.
     }
   }, [values]);
 
   const onChange = (e) => {
-    setValues((v) => ({
-      ...v,
+    setValues((current) => ({
+      ...current,
       [e.target.name]: e.target.value,
     }));
   };
@@ -84,7 +86,13 @@ export default function Checkout() {
         </p>
       </header>
 
-      {cartItems.length === 0 ? (
+      {productsLoading ? (
+        <p className="py-16 text-center text-[13px]">Loading your bag...</p>
+      ) : productsError ? (
+        <p className="py-16 text-center text-[13px]">
+          Unable to load products. Please try again.
+        </p>
+      ) : cartItems.length === 0 ? (
         <p className="py-16 text-center text-[13px]">
           Your bag is empty.{" "}
           <Link to="/shop" className="underline">

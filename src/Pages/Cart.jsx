@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Minus, Plus } from "lucide-react";
-import { useCart, egp, FREE_DELIVERY_THRESHOLD } from "../Context/CartContext.jsx";
+import {
+  useCart,
+  egp,
+  FREE_DELIVERY_THRESHOLD,
+} from "../Context/CartContext.jsx";
 
 const WORDS = [
   "",
@@ -19,6 +23,7 @@ const WORDS = [
 
 export default function Cart() {
   const navigate = useNavigate();
+
   const {
     cartItems,
     cartCount,
@@ -27,28 +32,39 @@ export default function Cart() {
     deliveryFee,
     total,
     promo,
+    productsLoading,
+    productsError,
     updateQuantity,
     removeFromCart,
     applyPromo,
     removePromo,
   } = useCart();
+
   const [code, setCode] = useState("");
-  const [feedback, setFeedback] = useState(null); // { ok, message }
+  const [feedback, setFeedback] = useState(null);
 
   const n = cartItems.length;
+
   const subtitle =
     n === 0
       ? "Your bag is waiting for its first scent."
-      : `${WORDS[n] || n} favourite ${n === 1 ? "scent" : "scents"}, ready to become your own.`;
+      : `${WORDS[n] || n} favourite ${
+          n === 1 ? "scent" : "scents"
+        }, ready to become your own.`;
 
   const remaining = Math.max(0, FREE_DELIVERY_THRESHOLD - subtotal);
+
   const progress = Math.min(100, (subtotal / FREE_DELIVERY_THRESHOLD) * 100);
 
   const onApply = () => {
-    const res = applyPromo(code);
-    setFeedback(res);
-    if (res.ok) setCode("");
+    const result = applyPromo(code);
+    setFeedback(result);
+
+    if (result.ok) {
+      setCode("");
+    }
   };
+
   const onRemovePromo = () => {
     removePromo();
     setFeedback(null);
@@ -67,12 +83,27 @@ export default function Cart() {
         <h1 className="font-serif text-[40px] font-medium leading-none md:text-[52px]">
           Your cart
         </h1>
-        <p className="mt-4 text-[14px] text-[#6d656c]">{subtitle}</p>
+
+        <p className="mt-4 text-[14px] text-[#6d656c]">
+          {productsLoading ? "Loading your bag..." : subtitle}
+        </p>
       </header>
 
-      {n === 0 ? (
+      {productsLoading ? (
+        <div className="py-20 text-center text-[13px] text-[#6d656c]">
+          Loading products...
+        </div>
+      ) : productsError ? (
+        <div className="py-20 text-center">
+          <p className="font-serif text-2xl">Unable to load your cart.</p>
+          <p className="mt-3 text-[12px] text-[#6d656c]">
+            Please check your connection and try again.
+          </p>
+        </div>
+      ) : n === 0 ? (
         <div className="py-20 text-center">
           <p className="font-serif text-2xl">Your bag is empty.</p>
+
           <Link
             to="/shop"
             className="mt-4 inline-block text-[12px] underline underline-offset-2"
@@ -88,79 +119,98 @@ export default function Cart() {
               <span className="font-medium">
                 {cartCount} {cartCount === 1 ? "item" : "items"}
               </span>
+
               <Link to="/shop" className="underline underline-offset-2">
                 Continue shopping →
               </Link>
             </div>
 
             <ul>
-              {cartItems.map((it) => (
-                <li
-                  key={it.key}
-                  className="flex items-center gap-4 border-b border-[#f1eeef] py-5 last:border-0 sm:gap-8"
-                >
-                  <Link
-                    to={`/product/${it.product.id}`}
-                    className="flex h-[110px] w-[84px] shrink-0 items-center justify-center sm:w-[110px]"
+              {cartItems.map((item) => {
+                const mainImage = item.product.images?.find(
+                  (image) => image.is_active && image.purpose === "main",
+                );
+
+                return (
+                  <li
+                    key={item.key}
+                    className="flex items-center gap-4 border-b border-[#f1eeef] py-5 last:border-0 sm:gap-8"
                   >
-                    <img
-                      src={it.product.img}
-                      alt={it.product.name}
-                      className="max-h-full max-w-full object-contain"
-                    />
-                  </Link>
-                  <div className="min-w-0 flex-1">
                     <Link
-                      to={`/product/${it.product.id}`}
-                      className="font-serif text-[16px] font-semibold leading-tight"
+                      to={`/product/${item.product.id}`}
+                      className="flex h-[110px] w-[84px] shrink-0 items-center justify-center sm:w-[110px]"
                     >
-                      {it.product.name}
+                      {mainImage?.path && (
+                        <img
+                          src={mainImage.path}
+                          alt={mainImage.alt_text || item.product.name}
+                          className="max-h-full max-w-full object-contain"
+                        />
+                      )}
                     </Link>
-                    <p className="mt-2 text-[11px] text-[#888087]">
-                      {it.family} · {it.volume}ml · Qty {it.qty}
-                    </p>
-                    <p className="mt-1.5 text-[12px] font-semibold">
-                      {egp(it.lineTotal)}
-                    </p>
-                    <div className="mt-2 flex h-9 w-[110px] items-center justify-between rounded-full border border-[#292329] px-3">
-                      <button
-                        type="button"
-                        aria-label="Decrease quantity"
-                        onClick={() => updateQuantity(it.key, it.qty - 1)}
-                        disabled={it.qty <= 1}
-                        className="disabled:opacity-30"
+
+                    <div className="min-w-0 flex-1">
+                      <Link
+                        to={`/product/${item.product.id}`}
+                        className="font-serif text-[16px] font-semibold leading-tight"
                       >
-                        <Minus size={11} />
-                      </button>
-                      <span className="text-[12px]" aria-live="polite">
-                        {it.qty}
-                      </span>
-                      <button
-                        type="button"
-                        aria-label="Increase quantity"
-                        onClick={() => updateQuantity(it.key, it.qty + 1)}
-                      >
-                        <Plus size={11} />
-                      </button>
+                        {item.product.name}
+                      </Link>
+
+                      <p className="mt-2 text-[11px] text-[#888087]">
+                        {item.product.family?.name} · {item.product.size} · Qty{" "}
+                        {item.qty}
+                      </p>
+
+                      <p className="mt-1.5 text-[12px] font-semibold">
+                        {egp(item.lineTotal)}
+                      </p>
+
+                      <div className="mt-2 flex h-9 w-[110px] items-center justify-between rounded-full border border-[#292329] px-3">
+                        <button
+                          type="button"
+                          aria-label="Decrease quantity"
+                          onClick={() => updateQuantity(item.key, item.qty - 1)}
+                          disabled={item.qty <= 1}
+                          className="disabled:opacity-30"
+                        >
+                          <Minus size={11} />
+                        </button>
+
+                        <span className="text-[12px]" aria-live="polite">
+                          {item.qty}
+                        </span>
+
+                        <button
+                          type="button"
+                          aria-label="Increase quantity"
+                          onClick={() => updateQuantity(item.key, item.qty + 1)}
+                        >
+                          <Plus size={11} />
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => removeFromCart(it.key)}
-                    className="self-center text-[11px] underline underline-offset-2"
-                  >
-                    Remove
-                  </button>
-                </li>
-              ))}
+
+                    <button
+                      type="button"
+                      onClick={() => removeFromCart(item.key)}
+                      className="self-center text-[11px] underline underline-offset-2"
+                    >
+                      Remove
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
 
+            {/* Free delivery progress */}
             <div className="mt-4 rounded-2xl bg-[#faf8f3] p-5">
               <p className="text-[13px] font-semibold text-[#5b6a46]">
                 {remaining > 0
                   ? `You're ${egp(remaining)} away from free delivery.`
                   : "Free delivery unlocked — your order ships on us."}
               </p>
+
               <div
                 className="mt-3 h-1 w-full overflow-hidden rounded-full bg-[#f6dfe6]"
                 role="progressbar"
@@ -173,6 +223,7 @@ export default function Cart() {
                   style={{ width: `${progress}%` }}
                 />
               </div>
+
               <p className="mt-3 text-[10px] text-[#6d656c]">
                 {egp(subtotal)} of {egp(FREE_DELIVERY_THRESHOLD)} · Based on
                 merchandise subtotal.
@@ -189,6 +240,7 @@ export default function Cart() {
             <dl className="mt-5 grid grid-cols-[1fr_1fr] gap-y-3 text-[12px] text-[#6d656c]">
               <dt>Subtotal</dt>
               <dd className="font-medium text-[#292329]">{egp(subtotal)}</dd>
+
               {discount > 0 && (
                 <>
                   <dt>Promo ({promo.code})</dt>
@@ -197,29 +249,34 @@ export default function Cart() {
                   </dd>
                 </>
               )}
+
               <dt>Delivery</dt>
               <dd className="font-medium text-[#292329]">{egp(deliveryFee)}</dd>
             </dl>
 
             <div className="mt-4 grid grid-cols-[1fr_1fr] items-baseline border-t border-[#f1dfe5] pt-4">
               <span className="text-[16px]">Total</span>
+
               <span className="text-[20px] font-semibold">{egp(total)}</span>
             </div>
 
+            {/* Promo code */}
             <div className="mt-6">
               <label htmlFor="promo" className="text-[11px] font-medium">
                 Promo code
               </label>
+
               <div className="mt-2 flex gap-2">
                 <input
                   id="promo"
                   value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && onApply()}
+                  onChange={(event) => setCode(event.target.value)}
+                  onKeyDown={(event) => event.key === "Enter" && onApply()}
                   placeholder="Enter code"
                   disabled={!!promo}
                   className="h-9 min-w-0 flex-1 rounded-full border border-[#eae7e9] bg-white px-4 text-[11px] outline-none disabled:bg-[#faf6f7]"
                 />
+
                 <button
                   type="button"
                   onClick={onApply}
@@ -229,8 +286,15 @@ export default function Cart() {
                   Apply
                 </button>
               </div>
+
               <p
-                className={`mt-2 text-[10px] ${promo || feedback?.ok ? "text-[#5b6a46]" : feedback ? "text-[#f32970]" : "text-[#888087]"}`}
+                className={`mt-2 text-[10px] ${
+                  promo || feedback?.ok
+                    ? "text-[#5b6a46]"
+                    : feedback
+                      ? "text-[#f32970]"
+                      : "text-[#888087]"
+                }`}
                 role="status"
               >
                 {promo
@@ -238,6 +302,7 @@ export default function Cart() {
                   : feedback
                     ? feedback.message
                     : "No promo code applied."}
+
                 {promo && (
                   <button
                     type="button"
@@ -257,9 +322,11 @@ export default function Cart() {
             >
               Continue to checkout →
             </button>
+
             <p className="mt-5 text-[10px] text-[#6d656c]">
               Cash on delivery available. Easy 14-day returns.
             </p>
+
             <Link
               to="/delivery-returns"
               className="mt-4 inline-block text-[11px] underline underline-offset-2"

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Check, Pencil, Wallet } from "lucide-react";
+import { Check, Wallet } from "lucide-react";
 
 import { useCart, egp } from "../Context/CartContext.jsx";
 import { CheckoutSteps } from "./CheckoutParts";
@@ -96,8 +96,16 @@ function CashOnDelivery() {
 }
 
 function PaymentOrderSummary() {
-  const { cartItems, cartCount, subtotal, discount, deliveryFee, total } =
-    useCart();
+  const {
+    cartItems,
+    cartCount,
+    subtotal,
+    discount,
+    deliveryFee,
+    total,
+    productsLoading,
+    productsError,
+  } = useCart();
 
   return (
     <aside className="self-start rounded-xl bg-[#fff5f8] p-5 md:p-6">
@@ -107,30 +115,47 @@ function PaymentOrderSummary() {
         {cartCount} {cartCount === 1 ? "item" : "items"} · All prices in EGP
       </p>
 
-      <ul className="mt-5 space-y-4 border-b border-[#f0e2e7] pb-4">
-        {cartItems.map((item) => (
-          <li key={item.key} className="flex items-center gap-4">
-            <div className="flex h-[65px] w-[48px] shrink-0 items-center justify-center">
-              <img
-                src={item.product.img}
-                alt={item.product.name}
-                className="max-h-full max-w-full object-contain"
-              />
-            </div>
+      {productsLoading ? (
+        <p className="py-8 text-center text-[11px] text-[#777078]">
+          Loading products...
+        </p>
+      ) : productsError ? (
+        <p className="py-8 text-center text-[11px] text-[#777078]">
+          Unable to load products. Please try again.
+        </p>
+      ) : (
+        <ul className="mt-5 space-y-4 border-b border-[#f0e2e7] pb-4">
+          {cartItems.map((item) => {
+            const mainImage = item.product.images?.find(
+              (image) => image.is_active && image.purpose === "main",
+            );
 
-            <div className="min-w-0 text-[10px]">
-              <p className="font-semibold">{item.product.name}</p>
+            return (
+              <li key={item.key} className="flex items-center gap-4">
+                <div className="flex h-[65px] w-[48px] shrink-0 items-center justify-center">
+                  {mainImage?.path && (
+                    <img
+                      src={mainImage.path}
+                      alt={mainImage.alt_text || item.product.name}
+                      className="max-h-full max-w-full object-contain"
+                    />
+                  )}
+                </div>
 
-              <p className="mt-1 text-[#777078]">
-                {item.family || item.product.family} · {item.volume}ml · Qty{" "}
-                {item.qty}
-              </p>
+                <div className="min-w-0 text-[10px]">
+                  <p className="font-semibold">{item.product.name}</p>
 
-              <p className="mt-1 font-semibold">{egp(item.lineTotal)}</p>
-            </div>
-          </li>
-        ))}
-      </ul>
+                  <p className="mt-1 text-[#777078]">
+                    {item.product.family?.name} · {item.volume} · Qty {item.qty}
+                  </p>
+
+                  <p className="mt-1 font-semibold">{egp(item.lineTotal)}</p>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
 
       <dl className="mt-4 space-y-2.5 text-[10px]">
         <div className="flex justify-between">
@@ -163,16 +188,40 @@ function PaymentOrderSummary() {
 }
 
 export default function PaymentReview() {
-  const { cartItems, total } = useCart();
+  const { cartItems, total, productsLoading, productsError } = useCart();
 
   const [confirmed, setConfirmed] = useState(false);
 
   const values = getCheckoutData();
 
   const placeOrder = () => {
-    // Frontend demo only. Connect this action to the order API later.
     setConfirmed(true);
   };
+
+  if (productsLoading) {
+    return (
+      <main className="mx-auto max-w-[1240px] px-4 py-20 text-center">
+        <p className="text-[13px]">Loading your order...</p>
+      </main>
+    );
+  }
+
+  if (productsError) {
+    return (
+      <main className="mx-auto max-w-[1240px] px-4 py-20 text-center">
+        <p className="text-[13px]">
+          Unable to load products. Please try again.
+        </p>
+
+        <Link
+          to="/cart"
+          className="mt-4 inline-block text-[12px] text-[#f72568] underline"
+        >
+          Return to cart
+        </Link>
+      </main>
+    );
+  }
 
   if (cartItems.length === 0) {
     return (
