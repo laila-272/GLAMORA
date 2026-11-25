@@ -6,82 +6,85 @@ import {
   useMemo,
   useState,
 } from "react";
-import { getProducts } from "../Services/productService.js";
+import api from "../Services/api.js";
 
 export const FREE_DELIVERY_THRESHOLD = 2000;
 export const DELIVERY_FEE = 60;
-export const egp = (n) => `EGP ${Math.round(n).toLocaleString("en-US")}`;
+
+export const egp = (n) =>
+  `EGP ${Math.round(Number(n) || 0).toLocaleString("en-US")}`;
 
 export const PROMOS = {
   GLAMORA10: { type: "percent", value: 10, label: "10% off" },
   WELCOME100: { type: "fixed", value: 100, label: "EGP 100 off" },
 };
 
-const STORAGE_KEY = "glamora-cart-v1";
-const empty = { lines: [], promo: null };
-
-function load() {
-  try {
-    const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
-
-    if (!data) return empty;
-
-    const lines = (Array.isArray(data.lines) ? data.lines : []).filter(
-      (line) =>
-        line.id != null &&
-        line.volume != null &&
-        Number.isInteger(line.qty) &&
-        line.qty >= 1,
-    );
-
-    return {
-      lines,
-      promo: PROMOS[data.promo] ? data.promo : null,
-    };
-  } catch {
-    return empty;
-  }
-}
+const STORAGE_KEY = "glamora-cart-promo-v1";
 
 const CartContext = createContext(null);
 
 export function CartProvider({ children }) {
-  const [state, setState] = useState(load);
-  const [products, setProducts] = useState([]);
-  const [productsLoading, setProductsLoading] = useState(true);
-  const [productsError, setProductsError] = useState(null);
+  const [cart, setCart] = useState(null);
+  const [cartLoading, setCartLoading] = useState(true);
+  const [cartError, setCartError] = useState(null);
+  const [promo, setPromo] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      return PROMOS[saved] ? saved : null;
+    } catch {
+      return null;
+    }
+  });
+
+  // GET /cart
+  const fetchCart = useCallback(async () => {
+    try {
+      setCartError(null);
+
+      const { data } = await api.get("/cart");
+
+      if (!data || !Array.isArray(data.items)) {
+        throw new Error("Invalid cart response");
+      }
+
+      setCart(data);
+      return data;
+    } catch (error) {
+      setCartError(error);
+      throw error;
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
 
-    const fetchProducts = async () => {
+    const loadCart = async () => {
       try {
-        setProductsLoading(true);
-        setProductsError(null);
+        setCartLoading(true);
 
-        const data = await getProducts();
+        const { data } = await api.get("/cart");
 
-        if (!Array.isArray(data)) {
-          throw new Error("Invalid products response");
+        if (!data || !Array.isArray(data.items)) {
+          throw new Error("Invalid cart response");
         }
 
         if (!cancelled) {
-          setProducts(data);
+          setCart(data);
+          setCartError(null);
         }
       } catch (error) {
-        console.error("Failed to load cart products:", error);
-
         if (!cancelled) {
-          setProductsError(error);
+          setCartError(error);
+          console.error("Failed to load cart:", error);
         }
       } finally {
         if (!cancelled) {
-          setProductsLoading(false);
+          setCartLoading(false);
         }
       }
     };
 
-    fetchProducts();
+    loadCart();
 
     return () => {
       cancelled = true;
@@ -90,88 +93,117 @@ export function CartProvider({ children }) {
 
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch {
-      // Cart remains available in memory.
-    }
-  }, [state]);
-
-  useEffect(() => {
-    const onStorage = (event) => {
-      if (event.key === STORAGE_KEY) {
-        setState(load());
+      if (promo) {
+        localStorage.setItem(STORAGE_KEY, promo);
+      } else {
+        localStorage.removeItem(STORAGE_KEY);
       }
-    };
+    } catch {
+      // Promo remains available in memory.
+    }
+  }, [promo]);
 
-    window.addEventListener("storage", onStorage);
-
-    return () => window.removeEventListener("storage", onStorage);
-  }, []);
-
+  // POST /cart/items
   const addToCart = useCallback(
-    (productId, { volume, qty = 1 } = {}, productData) => {
-      const product =
-        productData ||
-        products.find((item) => String(item.id) === String(productId));
+    async (productId, { qty = 1 } = {}) => {
+      try {
+        setCartError(null);
 
-      if (!product) {
-        console.error("Product is not available in the cart.");
+        await api.post("/cart/items", {
+          product_id: Number(productId),
+          quantity: qty,
+        });
+
+        await fetchCart();
+        return true;
+      } catch (error) {
+        console.error("Failed to add product to cart:", error);
+        setCartError(error);
         return false;
       }
-
-      const selectedVolume = volume ?? product.size;
-
-      setState((current) => {
-        const index = current.lines.findIndex(
-          (line) =>
-            String(line.id) === String(product.id) &&
-            line.volume === selectedVolume,
-        );
-
-        const lines = [...current.lines];
-
-        if (index >= 0) {
-          lines[index] = {
-            ...lines[index],
-            qty: lines[index].qty + qty,
-          };
-        } else {
-          lines.push({
-            id: product.id,
-            volume: selectedVolume,
-            qty,
-          });
-        }
-
-        return { ...current, lines };
-      });
-
-      return true;
     },
-    [products],
+    [fetchCart],
   );
 
-  const removeFromCart = useCallback((key) => {
-    setState((current) => ({
-      ...current,
-      lines: current.lines.filter(
-        (line) => `${line.id}-${line.volume}` !== key,
-      ),
-    }));
-  }, []);
+  // DELETE /cart/items/{productId}
+  const removeFromCart = useCallback(
+    async (key) => {
+      const item = cart?.items?.find(
+        (item) =>
+          String(item.product_id) === String(key) ||
+          String(item.id) === String(key),
+      );
 
-  const updateQuantity = useCallback((key, qty) => {
-    const next = Math.max(1, Math.floor(qty) || 1);
+      if (!item) return false;
 
-    setState((current) => ({
-      ...current,
-      lines: current.lines.map((line) =>
-        `${line.id}-${line.volume}` === key ? { ...line, qty: next } : line,
-      ),
-    }));
-  }, []);
+      try {
+        setCartError(null);
 
-  const clearCart = useCallback(() => setState(empty), []);
+        await api.delete(`/cart/items/${item.product_id}`);
+
+        await fetchCart();
+        return true;
+      } catch (error) {
+        console.error("Failed to remove cart item:", error);
+        setCartError(error);
+        return false;
+      }
+    },
+    [cart, fetchCart],
+  );
+
+  // POST /cart/items/{productId}
+  const updateQuantity = useCallback(
+    async (key, qty) => {
+      const item = cart?.items?.find(
+        (item) =>
+          String(item.product_id) === String(key) ||
+          String(item.id) === String(key),
+      );
+
+      if (!item) return false;
+
+      const quantity = Math.max(1, Math.floor(Number(qty)) || 1);
+
+      try {
+        setCartError(null);
+
+        await api.patch(`/cart/items/${item.product_id}`, {
+          quantity,
+        });
+
+        await fetchCart();
+        return true;
+      } catch (error) {
+        console.error("Failed to update cart quantity:", error);
+        setCartError(error);
+        return false;
+      }
+    },
+    [cart, fetchCart],
+  );
+
+  // Clear cart by deleting its items individually.
+  const clearCart = useCallback(async () => {
+    if (!cart?.items?.length) return true;
+
+    try {
+      setCartError(null);
+
+      await Promise.all(
+        cart.items.map((item) => api.delete(`/cart/items/${item.product_id}`)),
+      );
+
+      await fetchCart();
+      setPromo(null);
+
+      return true;
+    } catch (error) {
+      console.error("Failed to clear cart:", error);
+      setCartError(error);
+      return false;
+    }
+  }, [cart, fetchCart]);
 
   const applyPromo = useCallback((raw) => {
     const code = raw.trim().toUpperCase();
@@ -184,7 +216,7 @@ export function CartProvider({ children }) {
       return { ok: false, message: "That promo code isn't valid." };
     }
 
-    setState((current) => ({ ...current, promo: code }));
+    setPromo(code);
 
     return {
       ok: true,
@@ -193,38 +225,44 @@ export function CartProvider({ children }) {
   }, []);
 
   const removePromo = useCallback(() => {
-    setState((current) => ({ ...current, promo: null }));
+    setPromo(null);
   }, []);
 
   const value = useMemo(() => {
-    const cartItems = state.lines
-      .map((line) => {
-        const product = products.find(
-          (item) => String(item.id) === String(line.id),
-        );
+    const cartItems = (cart?.items || []).map((item) => {
+      const mainImage = item.images?.find(
+        (image) => image.is_active && image.purpose === "main",
+      );
 
-        if (!product) return null;
+      const unitPrice = Number(item.unit_price) || 0;
+      const lineTotal = Number(item.line_total) || 0;
 
-        const unitPrice = Number(product.sale_price ?? product.original_price);
+      return {
+        ...item,
+        key: String(item.product_id),
+        qty: item.quantity,
+        unitPrice,
+        lineTotal,
+        product: {
+          id: item.product_id,
+          name: item.product_name,
+          brand: {
+            name: item.brand_name,
+          },
+          images: item.images || [],
+          mainImage,
+        },
+      };
+    });
 
-        return {
-          ...line,
-          key: `${line.id}-${line.volume}`,
-          product,
-          unitPrice,
-          lineTotal: unitPrice * line.qty,
-        };
-      })
-      .filter(Boolean);
-
-    const cartCount = cartItems.reduce((total, item) => total + item.qty, 0);
-
-    const subtotal = cartItems.reduce(
-      (total, item) => total + item.lineTotal,
+    const cartCount = cartItems.reduce(
+      (total, item) => total + item.quantity,
       0,
     );
 
-    const rule = state.promo ? PROMOS[state.promo] : null;
+    const subtotal = Number(cart?.subtotal) || 0;
+
+    const rule = promo ? PROMOS[promo] : null;
 
     const discount = rule
       ? Math.min(
@@ -241,34 +279,39 @@ export function CartProvider({ children }) {
         : DELIVERY_FEE;
 
     return {
-      products,
-      productsLoading,
-      productsError,
+      cart,
+      products: [],
+      productsLoading: cartLoading,
+      productsError: cartError,
+      cartLoading,
+      cartError,
       cartItems,
       cartCount,
       subtotal,
       discount,
       deliveryFee,
       total: subtotal - discount + deliveryFee,
-      promo: rule ? { code: state.promo, label: rule.label } : null,
+      promo: rule ? { code: promo, label: rule.label } : null,
       addToCart,
       removeFromCart,
       updateQuantity,
       clearCart,
       applyPromo,
       removePromo,
+      refreshCart: fetchCart,
     };
   }, [
-    state,
-    products,
-    productsLoading,
-    productsError,
+    cart,
+    cartLoading,
+    cartError,
+    promo,
     addToCart,
     removeFromCart,
     updateQuantity,
     clearCart,
     applyPromo,
     removePromo,
+    fetchCart,
   ]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAccount } from "../../Context/AccountContext.jsx";
+import { useAuth } from "../../Context/AuthContext.jsx";
 
 const NAV = [
   { key: "overview", label: "Overview" },
@@ -11,12 +13,23 @@ const NAV = [
 ];
 
 export default function AccountLayout({ current, title, subtitle, children }) {
-  const { fullName, profile, resetProfile } = useAccount();
-  const navigate = useNavigate();
+  const { fullName, profile } = useAccount();
+  const { signOut } = useAuth();
 
-  const signOut = () => {
-    resetProfile();
-    navigate("/");
+  const navigate = useNavigate();
+  const [signingOut, setSigningOut] = useState(false);
+
+  const handleSignOut = async () => {
+    if (signingOut) return;
+
+    setSigningOut(true);
+
+    try {
+      await signOut();
+      navigate("/", { replace: true });
+    } finally {
+      setSigningOut(false);
+    }
   };
 
   const handleNavigation = (e) => {
@@ -146,10 +159,11 @@ export default function AccountLayout({ current, title, subtitle, children }) {
           <div className="mt-3 flex items-center justify-between gap-3 border-t border-[#eae7e9] pt-3 text-[10px] lg:block">
             <button
               type="button"
-              onClick={signOut}
-              className="shrink-0 text-[#f72568] underline underline-offset-2"
+              onClick={handleSignOut}
+              disabled={signingOut}
+              className="shrink-0 text-[#f72568] underline underline-offset-2 disabled:opacity-50"
             >
-              Sign out
+              {signingOut ? "Signing out..." : "Sign out"}
             </button>
 
             <div className="flex items-center gap-2 lg:mt-3 lg:block">

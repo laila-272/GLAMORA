@@ -110,29 +110,33 @@ function Details({ product: p }) {
     return () => clearTimeout(timer);
   }, [notice]);
 
-  const addToCart = () => {
-    const addedSuccessfully = addLine(p.id, { volume: p.size, qty }, p);
+ const addToCart = async () => {
+   setNotice("");
 
-    if (!addedSuccessfully) {
-      setNotice("Unable to add this product. Please try again.");
-      setAdded(false);
-      return;
-    }
+   const addedSuccessfully = await addLine(p.id, { qty });
 
-    setNotice(`Added ${qty} × ${p.name} to your bag.`);
-    setAdded(true);
-  };
+   if (!addedSuccessfully) {
+     setNotice("Unable to add this product. Please try again.");
+     setAdded(false);
+     return;
+   }
 
-  const buyNow = () => {
-   const addedSuccessfully = addLine(p.id, { volume: p.size, qty }, p);
+   setNotice(`Added ${qty} × ${p.name} to your bag.`);
+   setAdded(true);
+ };
 
-    if (addedSuccessfully) {
-      navigate("/checkout");
-    } else {
-      setNotice("Unable to add this product. Please try again.");
-      setAdded(false);
-    }
-  };
+ const buyNow = async () => {
+   setNotice("");
+
+   const addedSuccessfully = await addLine(p.id, { qty });
+
+   if (addedSuccessfully) {
+     navigate("/checkout");
+   } else {
+     setNotice("Unable to add this product. Please try again.");
+     setAdded(false);
+   }
+ };
 
   const share = async () => {
     const url = window.location.href;

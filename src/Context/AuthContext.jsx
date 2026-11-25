@@ -2,69 +2,121 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
 } from "react";
+
 import { useAccount } from "./AccountContext";
 import AuthModal from "../Pages/Auth/AuthModal.jsx";
+import { logoutUser } from "../Pages/Auth/AuthService.js";
 
 const KEY = "glamora-auth-v1";
+const TOKEN_KEY = "token";
+
 const AuthContext = createContext(null);
 
 function load() {
   try {
-    const d = JSON.parse(localStorage.getItem(KEY) || "null");
-    return d?.user?.email ? d : null;
+    const data = JSON.parse(localStorage.getItem(KEY) || "null");
+
+    if (data?.user?.email) {
+      return data;
+    }
+
+    return null;
   } catch {
     return null;
   }
 }
 
-/** Must sit inside <AccountProvider>. Renders the sign-in modal itself, so no layout changes are needed. */
 export function AuthProvider({ children }) {
   const { updateProfile, resetProfile } = useAccount();
-  const [session, setSession] = useState(load); // { user, token } | null
+
+  const [session, setSession] = useState(load);
   const [open, setOpen] = useState(false);
 
-  const openAuth = useCallback(() => setOpen(true), []);
-  const closeAuth = useCallback(() => setOpen(false), []);
+  // Restore token when the application reloads
+  useEffect(() => {
+    if (session?.token) {
+      localStorage.setItem(TOKEN_KEY, session.token);
 
-  // Called after the backend confirms the code / Google token. Existing and new emails are handled by the backend.
+      updateProfile({
+        email: session.user.email,
+        firstName: session.user.firstName ?? "",
+        lastName: session.user.lastName ?? "",
+        phone: session.user.phone ?? "",
+      });
+    }
+  }, [session, updateProfile]);
+
+  const openAuth = useCallback(() => {
+    setOpen(true);
+  }, []);
+
+  const closeAuth = useCallback(() => {
+    setOpen(false);
+  }, []);
+
+  // Login after successful OTP verification or Google authentication
   const login = useCallback(
     ({ user, token, isNewUser }) => {
-      const next = { user, token, isNewUser: !!isNewUser };
-      setSession(next);
-      try {
-        localStorage.setItem(KEY, JSON.stringify(next));
-      } catch {
-        /* ignore */
+      if (!token) {
+        throw new Error(
+          "Authentication succeeded without a token. Please check the API response.",
+        );
       }
+
+      if (!user?.email) {
+        throw new Error(
+          "User information is missing from the authentication response.",
+        );
+      }
+
+      const next = {
+        user,
+        token,
+        isNewUser: Boolean(isNewUser),
+      };
+
+      localStorage.setItem(TOKEN_KEY, token);
+      localStorage.setItem(KEY, JSON.stringify(next));
+
+      setSession(next);
+
       updateProfile({
         email: user.email,
         firstName: user.firstName ?? "",
         lastName: user.lastName ?? "",
         phone: user.phone ?? "",
       });
+
       setOpen(false);
     },
     [updateProfile],
   );
 
-  const signOut = useCallback(() => {
-    setSession(null);
+  // Logout
+  const signOut = useCallback(async () => {
     try {
+      await logoutUser();
+    } catch (error) {
+      console.error("Logout API error:", error);
+    } finally {
+      localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(KEY);
-    } catch {
-      /* ignore */
+
+      setSession(null);
+      resetProfile();
+      setOpen(false);
     }
-    resetProfile();
   }, [resetProfile]);
 
   const value = useMemo(
     () => ({
       user: session?.user ?? null,
-      isAuthenticated: !!session,
-      isNewUser: !!session?.isNewUser,
+      isAuthenticated: Boolean(session?.token),
+      isNewUser: Boolean(session?.isNewUser),
       authOpen: open,
       openAuth,
       closeAuth,
@@ -83,7 +135,11 @@ export function AuthProvider({ children }) {
 }
 
 export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used inside <AuthProvider>");
-  return ctx;
+  const context = useContext(AuthContext);
+
+  if (!context) {
+    throw new Error("useAuth must be used inside <AuthProvider>");
+  }
+
+  return context;
 }

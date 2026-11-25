@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Check, Wallet } from "lucide-react";
 
 import { useCart, egp } from "../Context/CartContext.jsx";
 import { CheckoutSteps } from "./CheckoutParts";
+import { createOrder } from "../Services/OrdersService.js";
 
 const KEY = "glamora-checkout-v1";
 
@@ -39,7 +40,6 @@ function DeliveryCard({ values }) {
 
       <div className="mt-3 space-y-1 text-[10px] leading-[1.6]">
         <p className="font-semibold">{fullName}</p>
-
         <p>{address}</p>
 
         <p>{[values.city, values.country].filter(Boolean).join(", ")}</p>
@@ -98,13 +98,13 @@ function CashOnDelivery() {
 function PaymentOrderSummary() {
   const {
     cartItems,
+    total,
+    productsLoading,
+    productsError,
     cartCount,
     subtotal,
     discount,
     deliveryFee,
-    total,
-    productsLoading,
-    productsError,
   } = useCart();
 
   return (
@@ -178,7 +178,6 @@ function PaymentOrderSummary() {
 
       <div className="mt-4 flex items-center justify-between border-t border-[#f0e2e7] pt-3">
         <span className="text-[14px] font-semibold">Total</span>
-
         <span className="text-[15px] font-semibold">{egp(total)}</span>
       </div>
 
@@ -188,14 +187,73 @@ function PaymentOrderSummary() {
 }
 
 export default function PaymentReview() {
-  const { cartItems, total, productsLoading, productsError } = useCart();
+  const { cartItems, total, productsLoading, productsError, clearCart } =
+    useCart();
 
-  const [confirmed, setConfirmed] = useState(false);
+  const [order, setOrder] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  const submittingRef = useRef(false);
 
   const values = getCheckoutData();
 
-  const placeOrder = () => {
-    setConfirmed(true);
+  const placeOrder = async () => {
+    if (submittingRef.current) return;
+
+    if (!cartItems.length) {
+      setError("Your cart is empty.");
+      return;
+    }
+
+    const requiredFields = [
+      values.firstName,
+      values.lastName,
+      values.phone,
+      values.email,
+      values.street,
+      values.area,
+      values.city,
+    ];
+
+    if (requiredFields.some((value) => !String(value || "").trim())) {
+      setError("Please complete your delivery information first.");
+      return;
+    }
+
+    submittingRef.current = true;
+    setSubmitting(true);
+    setError("");
+
+    try {
+      // Create order first.
+      const createdOrder = await createOrder(values, cartItems);
+
+      // Clear cart only after successful order creation.
+      const cleared = await clearCart();
+
+      if (!cleared) {
+        console.error(
+          "Order created successfully, but cart could not be cleared.",
+        );
+      }
+
+      // Show confirmation.
+      setOrder(createdOrder);
+    } catch (err) {
+      console.error("Failed to create order:", err);
+
+      const message =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        err.message ||
+        "Unable to place your order. Please try again.";
+
+      setError(message);
+    } finally {
+      submittingRef.current = false;
+      setSubmitting(false);
+    }
   };
 
   if (productsLoading) {
@@ -223,7 +281,7 @@ export default function PaymentReview() {
     );
   }
 
-  if (cartItems.length === 0) {
+  if (cartItems.length === 0 && !order) {
     return (
       <main className="mx-auto max-w-[1240px] px-4 py-20 text-center">
         <h1 className="font-serif text-2xl">Your bag is empty.</h1>
@@ -240,7 +298,7 @@ export default function PaymentReview() {
 
   return (
     <main className="mx-auto max-w-[1240px] px-4 pb-16 pt-4 text-[#292329] md:px-6">
-      <CheckoutSteps current={confirmed ? 3 : 2} />
+      <CheckoutSteps current={order ? 3 : 2} />
 
       <nav className="mt-6 text-[9px] text-[#888087]">
         <Link to="/cart" className="hover:underline">
@@ -251,17 +309,17 @@ export default function PaymentReview() {
 
       <header className="mt-3 border-b border-[#eae7e9] pb-3">
         <h1 className="font-serif text-[30px] font-medium leading-tight md:text-[38px]">
-          {confirmed ? "Order confirmation" : "Payment & review"}
+          {order ? "Order confirmation" : "Payment & review"}
         </h1>
 
         <p className="mt-2 text-[11px] text-[#6d656c]">
-          {confirmed
-            ? "Your order details are ready."
+          {order
+            ? "Your order has been submitted successfully."
             : "One last look. Make sure everything feels right."}
         </p>
       </header>
 
-      {confirmed ? (
+      {order ? (
         <div className="mx-auto max-w-[500px] py-16 text-center">
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#fff5f8]">
             <Check size={28} className="text-[#f72568]" />
@@ -269,16 +327,21 @@ export default function PaymentReview() {
 
           <h2 className="mt-5 font-serif text-[24px]">Thank you!</h2>
 
-          <p className="mt-2 text-[11px] leading-6 text-[#777078]">
-            This is a frontend confirmation preview. Connect the order API to
-            submit and confirm real orders.
+          <p className="mt-2 text-[11px] text-[#777078]">
+            Your order has been received.
           </p>
 
+          {order.order_number && (
+            <p className="mt-3 text-[13px] font-semibold">
+              Order number: {order.order_number}
+            </p>
+          )}
+
           <Link
-            to="/shop"
+            to="/account/orders"
             className="mt-5 inline-flex h-10 items-center justify-center rounded-full bg-[#f72568] px-7 text-[11px] text-white"
           >
-            Continue shopping
+            View my orders
           </Link>
         </div>
       ) : (
@@ -287,10 +350,22 @@ export default function PaymentReview() {
             <button
               type="button"
               onClick={placeOrder}
-              className="h-[38px] rounded-xl bg-[#f72568] px-5 text-[10px] font-medium text-white transition-colors hover:bg-[#df1758]"
+              disabled={submitting}
+              className="h-[38px] rounded-xl bg-[#f72568] px-5 text-[10px] font-medium text-white transition-colors hover:bg-[#df1758] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Place order — Pay {egp(total)} on delivery
+              {submitting
+                ? "Placing your order..."
+                : `Place order — Pay ${egp(total)} on delivery`}
             </button>
+
+            {error && (
+              <p
+                role="alert"
+                className="rounded-lg bg-red-50 p-3 text-[11px] text-red-600"
+              >
+                {error}
+              </p>
+            )}
 
             <DeliveryCard values={values} />
 
