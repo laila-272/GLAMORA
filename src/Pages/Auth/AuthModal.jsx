@@ -2,10 +2,11 @@ import { GoogleLogin } from "@react-oauth/google";
 import { Lock } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "../../Context/AuthContext.jsx";
-
+import { useNavigate } from "react-router-dom";
 import {
   CODE_LENGTH,
   requestEmailCode,
+  resendEmailCode,
   signInWithGoogle,
   verifyEmailCode,
 } from "../../Services/AuthService.js";
@@ -91,7 +92,6 @@ export default function AuthModal() {
   const [step, setStep] = useState("signin");
   const [email, setEmail] = useState("");
   const [codeValue, setCodeValue] = useState("");
-
   const [busy, setBusy] = useState(null);
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
@@ -148,13 +148,15 @@ export default function AuthModal() {
     setBusy("send");
 
     try {
-      await requestEmailCode(value);
+      const result = await requestEmailCode(value);
 
       setEmail(value);
       setCodeValue("");
       setCooldown(RESEND_SECONDS);
       setStep("verify");
-      setInfo("A verification code has been sent to your email.");
+      setInfo(
+        result.message || "A verification code has been sent to your email.",
+      );
     } catch (err) {
       setError(err.message);
     } finally {
@@ -197,10 +199,10 @@ export default function AuthModal() {
     setBusy("resend");
 
     try {
-      await requestEmailCode(email);
+      const result = await resendEmailCode(email);
 
       setCooldown(RESEND_SECONDS);
-      setInfo("A new verification code has been sent.");
+      setInfo(result.message || "A new verification code has been sent.");
     } catch (err) {
       setError(err.message);
     } finally {

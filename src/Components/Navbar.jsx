@@ -15,9 +15,9 @@ const announcements = [
 
 const links = [
   { label: "Shop all", to: "/shop" },
-  { label: "Women", href: "#women", mega: true },
-  { label: "Men", href: "#men" },
-  { label: "Unisex", href: "#kids" },
+  { label: "Women", to: "/shop?category=women" },
+  { label: "Men", to: "/shop?category=men" },
+  // { label: "Unisex", to: "/shop?category=unisex" },
   { label: "Brands", to: "/brands" },
   { label: "Our story", to: "/our-story" },
   { label: "Contact", to: "/contact" },
@@ -345,7 +345,7 @@ const { isAuthenticated, openAuth } = useAuth();
                 <Link
                   to="/account"
                   aria-label="Account"
-                  className={`${iconButton} hidden md:block`}
+                  className={`${iconButton} `}
                 >
                   <User size={18} strokeWidth={1.5} />
                 </Link>

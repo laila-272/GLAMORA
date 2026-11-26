@@ -43,7 +43,14 @@ export async function verifyEmailCode(email, code) {
     throw new Error(formatApiError(error));
   }
 }
-
+export async function resendEmailCode(email) {
+  try {
+    const response = await api.post("/auth/resend-otp", { email });
+    return response.data;
+  } catch (error) {
+    throw new Error(formatApiError(error));
+  }
+}
 // Google sign-in
 export async function signInWithGoogle(idToken) {
   if (!GOOGLE_CLIENT_ID) {

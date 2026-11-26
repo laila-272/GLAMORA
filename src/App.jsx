@@ -23,8 +23,9 @@ import SavedScents from "./Pages/Account/SavedScents";
 import Preferences from "./Pages/Account/Preferences";
 import Contact from "./Pages/Account/Contact";
 import NotFound from "./Pages/Account/NotFound";
-// import Search from "./Pages/Search";
+import Search from "./Pages/Search";
 import PaymentReview from "./Pages/PaymentReview";
+
 const router = createBrowserRouter([
   {
     path: "/",
@@ -48,9 +49,9 @@ const router = createBrowserRouter([
       { path: "brands/:brandName", element: <BrandProducts /> },
       { path: "our-story", element: <OurStory /> },
       { path: "contact", element: <Contact /> },
-      { path: "*", element: <NotFound /> },
-      // { path: "search", element: <Search /> },
+      { path: "search", element: <Search /> },
       { path: "payment-review", element: <PaymentReview /> },
+      { path: "*", element: <NotFound /> },
     ],
   },
 ]);
