@@ -1,0 +1,90 @@
+/* GLAMORA homepage motion system */
+
+.glamora-home {
+    --glamora-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Scroll reveal */
+.glamora-reveal {
+    opacity: 0;
+    transform: translate3d(0, 28px, 0);
+
+    transition:
+        opacity 800ms var(--glamora-ease),
+        transform 800ms var(--glamora-ease);
+
+    transition-delay: var(--reveal-delay, 0ms);
+    will-change: opacity, transform;
+}
+
+.glamora-reveal.is-visible {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+}
+
+/* Hero entrance animation */
+.glamora-hero-content .glamora-hero-title,
+.glamora-hero-content .glamora-hero-copy,
+.glamora-hero-content .glamora-hero-actions {
+    opacity: 0;
+    animation: glamora-rise-in 900ms var(--glamora-ease) forwards;
+}
+
+.glamora-hero-content .glamora-hero-title {
+    animation-delay: 120ms;
+}
+
+.glamora-hero-content .glamora-hero-copy {
+    animation-delay: 300ms;
+}
+
+.glamora-hero-content .glamora-hero-actions {
+    animation-delay: 460ms;
+}
+
+/* Image hover */
+.glamora-home .group img {
+    transition:
+        transform 700ms var(--glamora-ease),
+        filter 700ms var(--glamora-ease);
+}
+
+.glamora-home .group:hover img {
+    transform: scale(1.045);
+}
+
+/* Keyboard accessibility */
+.glamora-home a:focus-visible {
+    outline: 2px solid #f4256b;
+    outline-offset: 5px;
+}
+
+/* Animation keyframes */
+@keyframes glamora-rise-in {
+    from {
+        opacity: 0;
+        transform: translate3d(0, 24px, 0);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+    }
+}
+
+/* Reduced motion accessibility */
+@media (prefers-reduced-motion: reduce) {
+
+    .glamora-reveal,
+    .glamora-reveal.is-visible,
+    .glamora-hero-content .glamora-hero-title,
+    .glamora-hero-content .glamora-hero-copy,
+    .glamora-hero-content .glamora-hero-actions,
+    .glamora-home .group img {
+        animation: none !important;
+        transition: none !important;
+        opacity: 1 !important;
+        transform: none !important;
+        will-change: auto;
+    }
+}

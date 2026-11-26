@@ -4,43 +4,33 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
-// Demo profile. There is no auth/backend in the project, so the profile is kept in localStorage.
+import {
+  getFavorites,
+  addFavorite,
+  removeFavorite,
+} from "../Services/FavoritesService.js";
+
+// Demo profile
 export const DEFAULT_PROFILE = {
   firstName: "Salma",
   lastName: "Hassan",
   phone: "+20 100 123 4567",
   email: "salma.hassan@example.com",
 };
+
 const STORAGE_KEY = "glamora-account-v1";
 const ADDRESS_KEY = "glamora-addresses-v1";
-const SAVED_KEY = "glamora-wishlist-v1";
 const PREFS_KEY = "glamora-preferences-v1";
 
-// Demo defaults: the three products shown in the Saved scents design.
-export const DEFAULT_SAVED = [1, 2, 3];
-export const DEFAULT_PREFS = { arrivals: true, stories: true, offers: false };
-
-function loadSaved() {
-  try {
-    const d = JSON.parse(localStorage.getItem(SAVED_KEY) || "null");
-    return Array.isArray(d) ? d.filter(Number.isInteger) : DEFAULT_SAVED;
-  } catch {
-    return DEFAULT_SAVED;
-  }
-}
-function loadPrefs() {
-  try {
-    return {
-      ...DEFAULT_PREFS,
-      ...JSON.parse(localStorage.getItem(PREFS_KEY) || "{}"),
-    };
-  } catch {
-    return DEFAULT_PREFS;
-  }
-}
+export const DEFAULT_PREFS = {
+  arrivals: true,
+  stories: true,
+  offers: false,
+};
 
 export const DEFAULT_ADDRESSES = [
   {
@@ -70,21 +60,6 @@ export const DEFAULT_ADDRESSES = [
   },
 ];
 
-function loadAddresses() {
-  try {
-    const d = JSON.parse(localStorage.getItem(ADDRESS_KEY) || "null");
-    return Array.isArray(d) ? d : DEFAULT_ADDRESSES;
-  } catch {
-    return DEFAULT_ADDRESSES;
-  }
-}
-
-// Exactly one default address whenever the list is not empty.
-const normalize = (list) =>
-  list.length && !list.some((a) => a.isDefault)
-    ? list.map((a, i) => ({ ...a, isDefault: i === 0 }))
-    : list;
-
 function load() {
   try {
     return {
@@ -96,82 +71,212 @@ function load() {
   }
 }
 
+function loadPrefs() {
+  try {
+    return {
+      ...DEFAULT_PREFS,
+      ...JSON.parse(localStorage.getItem(PREFS_KEY) || "{}"),
+    };
+  } catch {
+    return DEFAULT_PREFS;
+  }
+}
+
+function loadAddresses() {
+  try {
+    const data = JSON.parse(localStorage.getItem(ADDRESS_KEY) || "null");
+    return Array.isArray(data) ? data : DEFAULT_ADDRESSES;
+  } catch {
+    return DEFAULT_ADDRESSES;
+  }
+}
+
+// Exactly one default address whenever the list is not empty.
+const normalize = (list) =>
+  list.length && !list.some((address) => address.isDefault)
+    ? list.map((address, index) => ({
+        ...address,
+        isDefault: index === 0,
+      }))
+    : list;
+
 const AccountContext = createContext(null);
 
 export function AccountProvider({ children }) {
   const [profile, setProfile] = useState(load);
   const [addresses, setAddresses] = useState(loadAddresses);
-  const [savedIds, setSavedIds] = useState(loadSaved);
   const [preferences, setPreferences] = useState(loadPrefs);
 
+  // Favorites API state
+  const [savedIds, setSavedIds] = useState([]);
+  const [favoritesLoading, setFavoritesLoading] = useState(true);
+  const [favoritesError, setFavoritesError] = useState("");
+
+  // Prevent duplicate requests for the same product
+  const pendingFavorites = useRef(new Set());
+
+  // Fetch favorites from backend
+  const fetchSaved = useCallback(async () => {
+    try {
+      setFavoritesLoading(true);
+      setFavoritesError("");
+
+      const favorites = await getFavorites();
+
+      const ids = favorites.map((product) => Number(product.id));
+
+      setSavedIds(ids);
+    } catch (error) {
+      console.error("Failed to fetch favorites:", error);
+
+      setFavoritesError(
+        error.response?.data?.message ||
+          "Failed to load your saved fragrances.",
+      );
+    } finally {
+      setFavoritesLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchSaved();
+  }, [fetchSaved]);
+
+  // Save profile
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
     } catch {
-      /* ignore */
+      // Ignore storage errors
     }
   }, [profile]);
 
+  // Save addresses
   useEffect(() => {
     try {
       localStorage.setItem(ADDRESS_KEY, JSON.stringify(addresses));
     } catch {
-      /* ignore */
+      // Ignore storage errors
     }
   }, [addresses]);
 
+  // Save preferences only
   useEffect(() => {
     try {
-      localStorage.setItem(SAVED_KEY, JSON.stringify(savedIds));
       localStorage.setItem(PREFS_KEY, JSON.stringify(preferences));
     } catch {
-      /* ignore */
+      // Ignore storage errors
     }
-  }, [savedIds, preferences]);
+  }, [preferences]);
 
-  // Wishlist shared by the shop, product pages and the Saved scents page.
+  // Add / Remove favorite through API
   const toggleSaved = useCallback(
-    (id) =>
-      setSavedIds((l) =>
-        l.includes(id) ? l.filter((x) => x !== id) : [...l, id],
-      ),
-    [],
-  );
-  const updatePreferences = useCallback(
-    (patch) => setPreferences((p) => ({ ...p, ...patch })),
-    [],
+    async (id) => {
+      const productId = Number(id);
+
+      if (!Number.isInteger(productId) || productId <= 0) {
+        return;
+      }
+
+      if (pendingFavorites.current.has(productId)) {
+        return;
+      }
+
+      pendingFavorites.current.add(productId);
+
+      const isCurrentlySaved = savedIds.includes(productId);
+
+      try {
+        if (isCurrentlySaved) {
+          await removeFavorite(productId);
+
+          setSavedIds((current) =>
+            current.filter((savedId) => savedId !== productId),
+          );
+        } else {
+          await addFavorite(productId);
+
+          setSavedIds((current) =>
+            current.includes(productId) ? current : [...current, productId],
+          );
+        }
+
+        setFavoritesError("");
+      } catch (error) {
+        console.error("Failed to update favorite:", error);
+
+        setFavoritesError(
+          error.response?.data?.message || "Failed to update your favorites.",
+        );
+
+        throw error;
+      } finally {
+        pendingFavorites.current.delete(productId);
+      }
+    },
+    [savedIds],
   );
 
-  const saveAddress = useCallback((addr) => {
+  const isSaved = useCallback(
+    (id) => savedIds.includes(Number(id)),
+    [savedIds],
+  );
+
+  // Preferences
+  const updatePreferences = useCallback((patch) => {
+    setPreferences((current) => ({
+      ...current,
+      ...patch,
+    }));
+  }, []);
+
+  // Save address
+  const saveAddress = useCallback((address) => {
     setAddresses((list) => {
-      const id = addr.id || `addr-${Date.now()}`;
-      const makeDefault = addr.isDefault || list.length === 0;
-      const base = addr.id
-        ? list.map((a) => (a.id === id ? { ...a, ...addr } : a))
-        : [...list, { ...addr, id }];
+      const id = address.id || `addr-${Date.now()}`;
+      const makeDefault = address.isDefault || list.length === 0;
+
+      const base = address.id
+        ? list.map((item) => (item.id === id ? { ...item, ...address } : item))
+        : [...list, { ...address, id }];
+
       return normalize(
-        base.map((a) => (makeDefault ? { ...a, isDefault: a.id === id } : a)),
+        base.map((item) =>
+          makeDefault ? { ...item, isDefault: item.id === id } : item,
+        ),
       );
     });
   }, []);
-  const removeAddress = useCallback(
-    (id) => setAddresses((l) => normalize(l.filter((a) => a.id !== id))),
-    [],
-  );
-  const makeDefault = useCallback(
-    (id) =>
-      setAddresses((l) => l.map((a) => ({ ...a, isDefault: a.id === id }))),
-    [],
-  );
 
-  const updateProfile = useCallback(
-    (patch) => setProfile((p) => ({ ...p, ...patch })),
-    [],
-  );
+  // Remove address
+  const removeAddress = useCallback((id) => {
+    setAddresses((list) =>
+      normalize(list.filter((address) => address.id !== id)),
+    );
+  }, []);
+
+  // Make address default
+  const makeDefault = useCallback((id) => {
+    setAddresses((list) =>
+      list.map((address) => ({
+        ...address,
+        isDefault: address.id === id,
+      })),
+    );
+  }, []);
+
+  // Update profile
+  const updateProfile = useCallback((patch) => {
+    setProfile((current) => ({
+      ...current,
+      ...patch,
+    }));
+  }, []);
+
+  // Reset demo profile and local account settings
   const resetProfile = useCallback(() => {
     setProfile(DEFAULT_PROFILE);
     setAddresses(DEFAULT_ADDRESSES);
-    setSavedIds(DEFAULT_SAVED);
     setPreferences(DEFAULT_PREFS);
   }, []);
 
@@ -181,13 +286,21 @@ export function AccountProvider({ children }) {
       fullName: `${profile.firstName} ${profile.lastName}`.trim(),
       updateProfile,
       resetProfile,
+
       addresses,
       saveAddress,
       removeAddress,
       makeDefault,
+
+      // Favorites
       savedIds,
       toggleSaved,
-      isSaved: (id) => savedIds.includes(id),
+      isSaved,
+      favoritesLoading,
+      favoritesError,
+      refreshFavorites: fetchSaved,
+
+      // Preferences
       preferences,
       updatePreferences,
     }),
@@ -201,17 +314,26 @@ export function AccountProvider({ children }) {
       makeDefault,
       savedIds,
       toggleSaved,
+      isSaved,
+      favoritesLoading,
+      favoritesError,
+      fetchSaved,
       preferences,
       updatePreferences,
     ],
   );
+
   return (
     <AccountContext.Provider value={value}>{children}</AccountContext.Provider>
   );
 }
 
 export function useAccount() {
-  const ctx = useContext(AccountContext);
-  if (!ctx) throw new Error("useAccount must be used inside <AccountProvider>");
-  return ctx;
+  const context = useContext(AccountContext);
+
+  if (!context) {
+    throw new Error("useAccount must be used inside <AccountProvider>");
+  }
+
+  return context;
 }

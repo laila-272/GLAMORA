@@ -49,6 +49,7 @@ export function Field({ id, label, className = "", children }) {
   );
 }
 
+
 export function SelectInput({
   id,
   value,
@@ -73,11 +74,20 @@ export function SelectInput({
           {placeholder}
         </option>
 
-        {options.map((option) => (
-          <option key={option} value={option} className="text-[#292329]">
-            {option}
-          </option>
-        ))}
+        {options.map((option) => {
+          const optionValue = typeof option === "object" ? option.id : option;
+          const optionLabel = typeof option === "object" ? option.name : option;
+
+          return (
+            <option
+              key={optionValue}
+              value={optionValue}
+              className="text-[#292329]"
+            >
+              {optionLabel}
+            </option>
+          );
+        })}
       </select>
 
       <ChevronDown
@@ -87,6 +97,7 @@ export function SelectInput({
     </div>
   );
 }
+
 
 export function CheckoutSteps({ current = 1 }) {
   const steps = ["Contact & delivery", "Payment & review", "Confirmation"];
@@ -202,7 +213,10 @@ export function ContactForm({ values, onChange }) {
   );
 }
 
+
 export function DeliveryForm({ values, onChange }) {
+  const { governorates, governoratesLoading, governoratesError } = useCart();
+
   const text = (id, label, placeholder, extra = {}) => (
     <Field id={id} label={label} className={extra.className}>
       <input
@@ -246,14 +260,33 @@ export function DeliveryForm({ values, onChange }) {
         {text("area", "Area / District", "Heliopolis")}
 
         <Field id="city" label="City / Governorate">
-          <SelectInput
-            id="city"
-            value={values.city}
-            onChange={onChange}
-            placeholder="Select governorate"
-            options={GOVERNORATES}
-            required
-          />
+          {governoratesLoading ? (
+            <div className={`${inputCls} flex items-center text-[#b9b3b8]`}>
+              Loading governorates...
+            </div>
+          ) : governoratesError ? (
+            <div>
+              <p className="text-[10px] text-red-500">
+                Unable to load governorates.
+              </p>
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                className="mt-1 text-[10px] underline"
+              >
+                Try again
+              </button>
+            </div>
+          ) : (
+            <SelectInput
+              id="city"
+              value={values.city}
+              onChange={onChange}
+              placeholder="Select governorate"
+              options={governorates}
+              required
+            />
+          )}
         </Field>
 
         <Field id="country" label="Country">
@@ -287,8 +320,10 @@ export function DeliveryForm({ values, onChange }) {
   );
 }
 
+
+
 export function DeliveryOption() {
-  const { deliveryFee } = useCart();
+  const { deliveryFee, selectedGovernorate } = useCart();
 
   return (
     <fieldset className="rounded-xl border border-[#eae7e9] p-4">
@@ -306,8 +341,11 @@ export function DeliveryOption() {
       </label>
 
       <p className="mt-2 text-[10px] leading-[1.5] text-[#6d656c]">
-        Free delivery over EGP 2,000 merchandise subtotal. Confirm delivery
-        timing and availability before ordering.
+        {selectedGovernorate
+          ? selectedGovernorate.is_free_shipping
+            ? "Free delivery is available for this governorate."
+            : `Shipping to ${selectedGovernorate.name}.`
+          : "Select your governorate to calculate the delivery fee."}
       </p>
     </fieldset>
   );

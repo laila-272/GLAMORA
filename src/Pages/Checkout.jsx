@@ -39,10 +39,15 @@ const load = () => {
 };
 
 export default function Checkout() {
-  const { cartItems, productsLoading, productsError } = useCart();
+  const {
+    cartItems,
+    productsLoading,
+    productsError,
+    setSelectedGovernorateId,
+    governoratesLoading,
+  } = useCart();
 
   const navigate = useNavigate();
-
   const [values, setValues] = useState(load);
 
   useEffect(() => {
@@ -53,16 +58,31 @@ export default function Checkout() {
     }
   }, [values]);
 
+  // Keep the selected governorate in CartContext
+  // so delivery fee and order total stay synchronized.
+  useEffect(() => {
+    setSelectedGovernorateId(values.city || "");
+  }, [values.city, setSelectedGovernorateId]);
+
   const onChange = (e) => {
+    const { name, value } = e.target;
+
     setValues((current) => ({
       ...current,
-      [e.target.name]: e.target.value,
+      [name]: value,
     }));
   };
 
   const onSubmit = (e) => {
     e.preventDefault();
-    navigate("/payment-review");
+
+    if (!values.city || governoratesLoading) {
+      return;
+    }
+
+    navigate("/payment-review", {
+      state: { checkoutValues: values },
+    });
   };
 
   return (
@@ -115,7 +135,8 @@ export default function Checkout() {
             <div className="flex flex-wrap items-center justify-between gap-4">
               <button
                 type="submit"
-                className="h-10 rounded-full bg-[#f72568] px-6 text-[11px] font-medium text-white"
+                disabled={!values.city || governoratesLoading}
+                className="h-10 rounded-full bg-[#f72568] px-6 text-[11px] font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Continue to payment
               </button>

@@ -20,6 +20,7 @@ export const PROMOS = {
 };
 
 const STORAGE_KEY = "glamora-cart-promo-v1";
+const GOVERNORATE_KEY = "glamora-checkout-governorate-v1";
 
 const CartContext = createContext(null);
 
@@ -27,6 +28,19 @@ export function CartProvider({ children }) {
   const [cart, setCart] = useState(null);
   const [cartLoading, setCartLoading] = useState(true);
   const [cartError, setCartError] = useState(null);
+
+  const [governorates, setGovernorates] = useState([]);
+  const [governoratesLoading, setGovernoratesLoading] = useState(true);
+  const [governoratesError, setGovernoratesError] = useState(null);
+
+  const [selectedGovernorateId, setSelectedGovernorateId] = useState(() => {
+    try {
+      return localStorage.getItem(GOVERNORATE_KEY) || "";
+    } catch {
+      return "";
+    }
+  });
+
   const [promo, setPromo] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -51,6 +65,30 @@ export function CartProvider({ children }) {
       return data;
     } catch (error) {
       setCartError(error);
+      throw error;
+    }
+  }, []);
+
+  // GET /governorates
+  const fetchGovernorates = useCallback(async () => {
+    try {
+      setGovernoratesError(null);
+
+      const { data } = await api.get("/governorates");
+
+      const list = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.data)
+          ? data.data
+          : Array.isArray(data?.governorates)
+            ? data.governorates
+            : [];
+
+      setGovernorates(list);
+      return list;
+    } catch (error) {
+      setGovernoratesError(error);
+      console.error("Failed to load governorates:", error);
       throw error;
     }
   }, []);
@@ -92,6 +130,46 @@ export function CartProvider({ children }) {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+
+    const loadGovernorates = async () => {
+      try {
+        setGovernoratesLoading(true);
+        setGovernoratesError(null);
+
+        const { data } = await api.get("/governorates");
+
+        const list = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.data)
+            ? data.data
+            : Array.isArray(data?.governorates)
+              ? data.governorates
+              : [];
+
+        if (!cancelled) {
+          setGovernorates(list);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setGovernoratesError(error);
+          console.error("Failed to load governorates:", error);
+        }
+      } finally {
+        if (!cancelled) {
+          setGovernoratesLoading(false);
+        }
+      }
+    };
+
+    loadGovernorates();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     try {
       if (promo) {
         localStorage.setItem(STORAGE_KEY, promo);
@@ -102,6 +180,18 @@ export function CartProvider({ children }) {
       // Promo remains available in memory.
     }
   }, [promo]);
+
+  useEffect(() => {
+    try {
+      if (selectedGovernorateId) {
+        localStorage.setItem(GOVERNORATE_KEY, selectedGovernorateId);
+      } else {
+        localStorage.removeItem(GOVERNORATE_KEY);
+      }
+    } catch {
+      // Selection remains available in memory.
+    }
+  }, [selectedGovernorateId]);
 
   // POST /cart/items
   const addToCart = useCallback(
@@ -152,7 +242,7 @@ export function CartProvider({ children }) {
     [cart, fetchCart],
   );
 
-  // POST /cart/items/{productId}
+  // PATCH /cart/items/{productId}
   const updateQuantity = useCallback(
     async (key, qty) => {
       const item = cart?.items?.find(
@@ -249,6 +339,7 @@ export function CartProvider({ children }) {
           brand: {
             name: item.brand_name,
           },
+          family: item.family,
           images: item.images || [],
           mainImage,
         },
@@ -273,10 +364,18 @@ export function CartProvider({ children }) {
         )
       : 0;
 
+    const selectedGovernorate =
+      governorates.find(
+        (governorate) =>
+          String(governorate.id) === String(selectedGovernorateId),
+      ) || null;
+
     const deliveryFee =
-      cartItems.length === 0 || subtotal >= FREE_DELIVERY_THRESHOLD
+      cartItems.length === 0 || !selectedGovernorate
         ? 0
-        : DELIVERY_FEE;
+        : selectedGovernorate.is_free_shipping
+          ? 0
+          : Number(selectedGovernorate.shipping_cost) || 0;
 
     return {
       cart,
@@ -291,6 +390,15 @@ export function CartProvider({ children }) {
       discount,
       deliveryFee,
       total: subtotal - discount + deliveryFee,
+
+      governorates,
+      governoratesLoading,
+      governoratesError,
+      selectedGovernorate,
+      selectedGovernorateId,
+      setSelectedGovernorateId,
+      refreshGovernorates: fetchGovernorates,
+
       promo: rule ? { code: promo, label: rule.label } : null,
       addToCart,
       removeFromCart,
@@ -305,6 +413,10 @@ export function CartProvider({ children }) {
     cartLoading,
     cartError,
     promo,
+    governorates,
+    governoratesLoading,
+    governoratesError,
+    selectedGovernorateId,
     addToCart,
     removeFromCart,
     updateQuantity,
