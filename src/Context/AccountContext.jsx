@@ -14,12 +14,13 @@ import {
   removeFavorite,
 } from "../Services/FavoritesService.js";
 
-// Demo profile
+import { useAuth } from "./AuthContext";
+
 export const DEFAULT_PROFILE = {
-  firstName: "Salma",
-  lastName: "Hassan",
-  phone: "+20 100 123 4567",
-  email: "salma.hassan@example.com",
+  firstName: "",
+  lastName: "",
+  phone: "",
+  email: "",
 };
 
 const STORAGE_KEY = "glamora-account-v1";
@@ -32,33 +33,7 @@ export const DEFAULT_PREFS = {
   offers: false,
 };
 
-export const DEFAULT_ADDRESSES = [
-  {
-    id: "home",
-    label: "Home",
-    name: "Salma Hassan",
-    street: "18 El Nozha Street",
-    apartment: "Apartment 4, Floor 2",
-    area: "Heliopolis",
-    city: "Cairo",
-    country: "Egypt",
-    phone: "+20 100 123 4567",
-    note: "Building entrance beside the pharmacy.",
-    isDefault: true,
-  },
-  {
-    id: "work",
-    label: "Work",
-    name: "Salma Hassan",
-    street: "12 Example Avenue",
-    apartment: "Office 6",
-    area: "Maadi",
-    city: "Cairo",
-    country: "Egypt",
-    phone: "+20 100 123 4567",
-    isDefault: false,
-  },
-];
+export const DEFAULT_ADDRESSES = [];
 
 function load() {
   try {
@@ -67,7 +42,7 @@ function load() {
       ...JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"),
     };
   } catch {
-    return DEFAULT_PROFILE;
+    return { ...DEFAULT_PROFILE };
   }
 }
 
@@ -78,20 +53,21 @@ function loadPrefs() {
       ...JSON.parse(localStorage.getItem(PREFS_KEY) || "{}"),
     };
   } catch {
-    return DEFAULT_PREFS;
+    return { ...DEFAULT_PREFS };
   }
 }
 
 function loadAddresses() {
   try {
     const data = JSON.parse(localStorage.getItem(ADDRESS_KEY) || "null");
-    return Array.isArray(data) ? data : DEFAULT_ADDRESSES;
+
+    return Array.isArray(data) ? data : [];
   } catch {
-    return DEFAULT_ADDRESSES;
+    return [];
   }
 }
 
-// Exactly one default address whenever the list is not empty.
+// Ensure exactly one default address whenever the list is not empty.
 const normalize = (list) =>
   list.length && !list.some((address) => address.isDefault)
     ? list.map((address, index) => ({
@@ -103,31 +79,39 @@ const normalize = (list) =>
 const AccountContext = createContext(null);
 
 export function AccountProvider({ children }) {
+  const { isAuthenticated, user } = useAuth();
+
   const [profile, setProfile] = useState(load);
   const [addresses, setAddresses] = useState(loadAddresses);
   const [preferences, setPreferences] = useState(loadPrefs);
 
-  // Favorites API state
+  // Favorites API state.
   const [savedIds, setSavedIds] = useState([]);
-  const [favoritesLoading, setFavoritesLoading] = useState(true);
+  const [favoritesLoading, setFavoritesLoading] = useState(
+    Boolean(isAuthenticated),
+  );
   const [favoritesError, setFavoritesError] = useState("");
 
-  // Prevent duplicate requests for the same product
+  // Prevent duplicate requests for the same product.
   const pendingFavorites = useRef(new Set());
 
-  // Fetch favorites from backend
+  // Fetch favorites from backend.
   const fetchSaved = useCallback(async () => {
     try {
       setFavoritesLoading(true);
       setFavoritesError("");
 
+     
+
       const favorites = await getFavorites();
+
+     
 
       const ids = favorites.map((product) => Number(product.id));
 
       setSavedIds(ids);
     } catch (error) {
-      console.error("Failed to fetch favorites:", error);
+      
 
       setFavoritesError(
         error.response?.data?.message ||
@@ -138,44 +122,60 @@ export function AccountProvider({ children }) {
     }
   }, []);
 
+  // Load account data and favorites after authentication.
   useEffect(() => {
-    fetchSaved();
-  }, [fetchSaved]);
+    if (!isAuthenticated) {
+      setSavedIds([]);
+      setFavoritesError("");
+      setFavoritesLoading(false);
 
-  // Save profile
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
-    } catch {
-      // Ignore storage errors
+      setProfile({ ...DEFAULT_PROFILE });
+      setAddresses([]);
+      setPreferences({ ...DEFAULT_PREFS });
+
+      return;
     }
+
+    const fullName = user?.name || "";
+    const nameParts = fullName.trim().split(/\s+/).filter(Boolean);
+
+    setProfile((current) => ({
+      ...current,
+      email: user?.email || "",
+      firstName: user?.firstName ?? nameParts[0] ?? "",
+      lastName: user?.lastName ?? nameParts.slice(1).join(" "),
+      phone: user?.phone ?? "",
+    }));
+
+    fetchSaved();
+  }, [isAuthenticated, user, fetchSaved]);
+
+  // Save profile.
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
   }, [profile]);
 
-  // Save addresses
+  // Save addresses.
   useEffect(() => {
-    try {
-      localStorage.setItem(ADDRESS_KEY, JSON.stringify(addresses));
-    } catch {
-      // Ignore storage errors
-    }
+    localStorage.setItem(ADDRESS_KEY, JSON.stringify(addresses));
   }, [addresses]);
 
-  // Save preferences only
+  // Save preferences.
   useEffect(() => {
-    try {
-      localStorage.setItem(PREFS_KEY, JSON.stringify(preferences));
-    } catch {
-      // Ignore storage errors
-    }
+    localStorage.setItem(PREFS_KEY, JSON.stringify(preferences));
   }, [preferences]);
 
-  // Add / Remove favorite through API
+  // Add / Remove favorite through API.
   const toggleSaved = useCallback(
     async (id) => {
       const productId = Number(id);
 
       if (!Number.isInteger(productId) || productId <= 0) {
         return;
+      }
+
+      if (!isAuthenticated) {
+        throw new Error("Please login to manage your favorites.");
       }
 
       if (pendingFavorites.current.has(productId)) {
@@ -203,7 +203,7 @@ export function AccountProvider({ children }) {
 
         setFavoritesError("");
       } catch (error) {
-        console.error("Failed to update favorite:", error);
+        console.error("🔴 Failed to update favorite:", error);
 
         setFavoritesError(
           error.response?.data?.message || "Failed to update your favorites.",
@@ -214,7 +214,7 @@ export function AccountProvider({ children }) {
         pendingFavorites.current.delete(productId);
       }
     },
-    [savedIds],
+    [savedIds, isAuthenticated],
   );
 
   const isSaved = useCallback(
@@ -222,7 +222,7 @@ export function AccountProvider({ children }) {
     [savedIds],
   );
 
-  // Preferences
+  // Preferences.
   const updatePreferences = useCallback((patch) => {
     setPreferences((current) => ({
       ...current,
@@ -230,7 +230,7 @@ export function AccountProvider({ children }) {
     }));
   }, []);
 
-  // Save address
+  // Save address.
   const saveAddress = useCallback((address) => {
     setAddresses((list) => {
       const id = address.id || `addr-${Date.now()}`;
@@ -248,14 +248,14 @@ export function AccountProvider({ children }) {
     });
   }, []);
 
-  // Remove address
+  // Remove address.
   const removeAddress = useCallback((id) => {
     setAddresses((list) =>
       normalize(list.filter((address) => address.id !== id)),
     );
   }, []);
 
-  // Make address default
+  // Make address default.
   const makeDefault = useCallback((id) => {
     setAddresses((list) =>
       list.map((address) => ({
@@ -265,7 +265,7 @@ export function AccountProvider({ children }) {
     );
   }, []);
 
-  // Update profile
+  // Update profile.
   const updateProfile = useCallback((patch) => {
     setProfile((current) => ({
       ...current,
@@ -273,11 +273,11 @@ export function AccountProvider({ children }) {
     }));
   }, []);
 
-  // Reset demo profile and local account settings
+  // Reset local account data.
   const resetProfile = useCallback(() => {
-    setProfile(DEFAULT_PROFILE);
-    setAddresses(DEFAULT_ADDRESSES);
-    setPreferences(DEFAULT_PREFS);
+    setProfile({ ...DEFAULT_PROFILE });
+    setAddresses([]);
+    setPreferences({ ...DEFAULT_PREFS });
   }, []);
 
   const value = useMemo(
@@ -292,7 +292,7 @@ export function AccountProvider({ children }) {
       removeAddress,
       makeDefault,
 
-      // Favorites
+      // Favorites.
       savedIds,
       toggleSaved,
       isSaved,
@@ -300,7 +300,7 @@ export function AccountProvider({ children }) {
       favoritesError,
       refreshFavorites: fetchSaved,
 
-      // Preferences
+      // Preferences.
       preferences,
       updatePreferences,
     }),

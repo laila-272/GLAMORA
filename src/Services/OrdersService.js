@@ -1,13 +1,12 @@
-import api from "./api.js";
+import api, { getAuthHeaders } from "./api.js";
 
 const ORDERS_ENDPOINT = "/orders";
 
-/**
- * Get all orders for the authenticated user.
- * GET /orders
- */
 export const getOrders = async () => {
-  const response = await api.get(ORDERS_ENDPOINT);
+  const response = await api.get(ORDERS_ENDPOINT, {
+    headers: getAuthHeaders(),
+  });
+
   const data = response.data;
 
   return Array.isArray(data)
@@ -19,24 +18,18 @@ export const getOrders = async () => {
         : [];
 };
 
-/**
- * Get a single order by ID.
- * GET /orders/{id}
- */
 export const getOrderById = async (orderId) => {
   if (!orderId) {
     throw new Error("Order ID is required.");
   }
 
-  const response = await api.get(`${ORDERS_ENDPOINT}/${orderId}`);
+  const response = await api.get(`${ORDERS_ENDPOINT}/${orderId}`, {
+    headers: getAuthHeaders(),
+  });
 
   return response.data?.data ?? response.data;
 };
 
-/**
- * Create a new order.
- * POST /orders
- */
 export const createOrder = async (checkoutData, cartItems) => {
   if (!checkoutData) {
     throw new Error("Checkout information is required.");
@@ -93,11 +86,12 @@ export const createOrder = async (checkoutData, cartItems) => {
     payment_method: "cod",
   };
 
-  const response = await api.post(ORDERS_ENDPOINT, payload);
+  const response = await api.post(ORDERS_ENDPOINT, payload, {
+    headers: getAuthHeaders(),
+  });
 
   return response.data?.data ?? response.data;
 };
-
 
 const OrdersService = {
   getOrders,

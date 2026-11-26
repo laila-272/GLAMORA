@@ -1,19 +1,17 @@
-import { useEffect, useState } from "react";
-import { Lock } from "lucide-react";
 import { GoogleLogin } from "@react-oauth/google";
+import { Lock } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useAuth } from "../../Context/AuthContext.jsx";
 
 import {
   CODE_LENGTH,
-  DEMO_CODE,
-  authConfig,
   requestEmailCode,
-  verifyEmailCode,
   signInWithGoogle,
-} from "./AuthService.js";
+  verifyEmailCode,
+} from "../../Services/AuthService.js";
 
-import signin from "../../assets/signin.png";
 import code from "../../assets/code.png";
+import signin from "../../assets/signin.png";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const RESEND_SECONDS = 30;
@@ -127,10 +125,6 @@ export default function AuthModal() {
     return () => clearTimeout(timer);
   }, [cooldown]);
 
-  const demoNote = authConfig.demo
-    ? ` Demo mode: no email is sent — use code ${DEMO_CODE}.`
-    : "";
-
   const reset = () => {
     setError("");
     setInfo("");
@@ -160,7 +154,7 @@ export default function AuthModal() {
       setCodeValue("");
       setCooldown(RESEND_SECONDS);
       setStep("verify");
-      setInfo(demoNote.trim());
+      setInfo("A verification code has been sent to your email.");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -206,7 +200,7 @@ export default function AuthModal() {
       await requestEmailCode(email);
 
       setCooldown(RESEND_SECONDS);
-      setInfo(`A new code has been sent.${demoNote}`);
+      setInfo("A new verification code has been sent.");
     } catch (err) {
       setError(err.message);
     } finally {

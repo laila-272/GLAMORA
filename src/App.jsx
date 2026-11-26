@@ -23,7 +23,7 @@ import SavedScents from "./Pages/Account/SavedScents";
 import Preferences from "./Pages/Account/Preferences";
 import Contact from "./Pages/Account/Contact";
 import NotFound from "./Pages/Account/NotFound";
-import Search from "./Pages/Search";
+// import Search from "./Pages/Search";
 import PaymentReview from "./Pages/PaymentReview";
 const router = createBrowserRouter([
   {
@@ -49,22 +49,21 @@ const router = createBrowserRouter([
       { path: "our-story", element: <OurStory /> },
       { path: "contact", element: <Contact /> },
       { path: "*", element: <NotFound /> },
-      { path: "search", element: <Search /> },
+      // { path: "search", element: <Search /> },
       { path: "payment-review", element: <PaymentReview /> },
     ],
   },
 ]);
 
 function App() {
-  // One CartProvider wrapping the router, so every page shares the same cart.
   return (
-    <AccountProvider>
-      <AuthProvider>
+    <AuthProvider>
+      <AccountProvider>
         <CartProvider>
           <RouterProvider router={router} />
         </CartProvider>
-      </AuthProvider>
-    </AccountProvider>
+      </AccountProvider>
+    </AuthProvider>
   );
 }
 

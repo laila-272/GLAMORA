@@ -7,9 +7,8 @@ import {
   useState,
 } from "react";
 
-import { useAccount } from "./AccountContext";
 import AuthModal from "../Pages/Auth/AuthModal.jsx";
-import { logoutUser } from "../Pages/Auth/AuthService.js";
+import { logoutUser } from "../Services/AuthService.js";
 
 const KEY = "glamora-auth-v1";
 const TOKEN_KEY = "token";
@@ -20,35 +19,32 @@ function load() {
   try {
     const data = JSON.parse(localStorage.getItem(KEY) || "null");
 
-    if (data?.user?.email) {
+    if (data?.user?.email && data?.token) {
+     
+
       return data;
     }
 
+    
     return null;
-  } catch {
+  } catch (error) {
+    
     return null;
   }
 }
 
 export function AuthProvider({ children }) {
-  const { updateProfile, resetProfile } = useAccount();
-
   const [session, setSession] = useState(load);
   const [open, setOpen] = useState(false);
 
-  // Restore token when the application reloads
+  // Restore Sanctum token when application reloads.
   useEffect(() => {
-    if (session?.token) {
-      localStorage.setItem(TOKEN_KEY, session.token);
+    if (!session?.token) return;
 
-      updateProfile({
-        email: session.user.email,
-        firstName: session.user.firstName ?? "",
-        lastName: session.user.lastName ?? "",
-        phone: session.user.phone ?? "",
-      });
-    }
-  }, [session, updateProfile]);
+    localStorage.setItem(TOKEN_KEY, session.token);
+
+   
+  }, [session]);
 
   const openAuth = useCallback(() => {
     setOpen(true);
@@ -58,59 +54,56 @@ export function AuthProvider({ children }) {
     setOpen(false);
   }, []);
 
-  // Login after successful OTP verification or Google authentication
-  const login = useCallback(
-    ({ user, token, isNewUser }) => {
-      if (!token) {
-        throw new Error(
-          "Authentication succeeded without a token. Please check the API response.",
-        );
-      }
+  // Login after OTP verification or Google authentication.
+  const login = useCallback(({ user, token, isNewUser }) => {
+   
 
-      if (!user?.email) {
-        throw new Error(
-          "User information is missing from the authentication response.",
-        );
-      }
+    if (!token) {
+      throw new Error(
+        "Authentication succeeded without a token. Please check the API response.",
+      );
+    }
 
-      const next = {
-        user,
-        token,
-        isNewUser: Boolean(isNewUser),
-      };
+    if (!user?.email) {
+      throw new Error(
+        "User information is missing from the authentication response.",
+      );
+    }
 
-      localStorage.setItem(TOKEN_KEY, token);
-      localStorage.setItem(KEY, JSON.stringify(next));
+    const next = {
+      user,
+      token,
+      isNewUser: Boolean(isNewUser),
+    };
 
-      setSession(next);
+    localStorage.setItem(TOKEN_KEY, token);
+    localStorage.setItem(KEY, JSON.stringify(next));
 
-      updateProfile({
-        email: user.email,
-        firstName: user.firstName ?? "",
-        lastName: user.lastName ?? "",
-        phone: user.phone ?? "",
-      });
+    
 
-      setOpen(false);
-    },
-    [updateProfile],
-  );
+    setSession(next);
+    setOpen(false);
+  }, []);
 
-  // Logout
+  // Logout.
   const signOut = useCallback(async () => {
+   
     try {
       await logoutUser();
     } catch (error) {
-      console.error("Logout API error:", error);
+      console.error("🔴 Logout API error:", error);
     } finally {
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(KEY);
 
+      
+
       setSession(null);
-      resetProfile();
       setOpen(false);
+
+      
     }
-  }, [resetProfile]);
+  }, []);
 
   const value = useMemo(
     () => ({
